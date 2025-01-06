@@ -52,12 +52,11 @@ const DrawerListItem = ({ text, href }) => {
 
   return (
     <>
-      <ListItem disableGutters disablePadding>
+      <ListItem disablePadding>
         <ListItemButton component={Link} href={href} disabled={isActive}>
           <ListItemText primary={text} />
         </ListItemButton>
       </ListItem>
-      <Divider />
     </>
   );
 };
@@ -125,7 +124,7 @@ export default function Navbar({ children }) {
           <Logo />
         </Toolbar>
         <Divider />
-        <List dense disablePadding>
+        <List dense>
           <DrawerListItem text="Query" href="/query" />
           <DrawerListItem text="Watch" href="/watch" />
           <DrawerListItem text="About" href="/about" />

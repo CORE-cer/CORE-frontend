@@ -9,6 +9,7 @@ const Main = ({ permanentDrawer, children, sx }) => {
         display: "flex",
         ml: permanentDrawer ? `${DRAWER_WIDTH}px` : 0,
         flexGrow: 1,
+        overflow: "hidden",
         // 48px is the dense's toolbar height
         height: `calc(100vh - 48px)`,
       }}
