@@ -32,7 +32,13 @@ const QuerySelectionItem = ({ qid, checked, handleChange }) => {
     <ListItem disablePadding>
       <ListItemButton onClick={handleChange}>
         <ListItemIcon>
-          <Checkbox checked={checked} onChange={handleChange} className={`color-${qid % MAX_COLORS}`} />
+          <Checkbox
+            color="text.primary"
+            checked={checked}
+            className={`color-${qid % MAX_COLORS}`}
+            disableFocusRipple
+            disableTouchRipple
+          />
         </ListItemIcon>
         <ListItemText primary={qid} sx={{ wordBreak: "break-all" }} />
       </ListItemButton>
@@ -43,6 +49,7 @@ const QuerySelectionItem = ({ qid, checked, handleChange }) => {
 const QuerySelection = ({ queryIds, selectedQueryIds, setSelectedQueryIds }) => {
   const handleSelectSingleQuery = (qid) => {
     setSelectedQueryIds((prev) => {
+      console.log("CLICK");
       const next = new Set(prev);
       if (next.has(qid)) {
         next.delete(qid);
@@ -54,10 +61,10 @@ const QuerySelection = ({ queryIds, selectedQueryIds, setSelectedQueryIds }) => 
   };
 
   const handleSelectAll = () => {
-    if (selectedQueryIds.size === queryIds.length) {
-      setSelectedQueryIds(new Set());
-    } else {
+    if (selectedQueryIds.size === 0) {
       setSelectedQueryIds(new Set(queryIds));
+    } else {
+      setSelectedQueryIds(new Set());
     }
   };
 
@@ -70,8 +77,9 @@ const QuerySelection = ({ queryIds, selectedQueryIds, setSelectedQueryIds }) => 
               <Checkbox
                 color="text.primary"
                 checked={selectedQueryIds.size === queryIds.length}
-                onChange={handleSelectAll}
                 indeterminate={selectedQueryIds.size > 0 && selectedQueryIds.size !== queryIds.length}
+                disableFocusRipple
+                disableTouchRipple
               />
             </ListItemIcon>
             <ListItemText primary="All queries" sx={{ wordBreak: "break-all" }} />
