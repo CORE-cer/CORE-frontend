@@ -7,29 +7,19 @@ import {
   ListItemText,
   Checkbox,
   ListItemIcon,
-} from "@mui/material";
-import { LoremIpsum } from "lorem-ipsum";
-import { useEffect, useState } from "react";
-import { Helmet } from "react-helmet";
+} from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet';
 
 const MAX_DATA = 100;
 const MAX_COLORS = 16;
 
-const lorem = new LoremIpsum();
-
 const getQueries = async () => {
   const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
-  const fetchRes = await fetch(baseUrl + "/all-queries-info", {
-    method: "GET",
+  const fetchRes = await fetch(baseUrl + '/all-queries-info', {
+    method: 'GET',
   });
   return await fetchRes.json();
-};
-
-const fakeData = (qid) => {
-  return {
-    qid,
-    data: `[${new Date().toISOString()}] Query #${qid} ${lorem.generateWords(5)}`,
-  };
 };
 
 const QuerySelectionItem = ({ qid, checked, handleChange }) => {
@@ -45,7 +35,7 @@ const QuerySelectionItem = ({ qid, checked, handleChange }) => {
             disableTouchRipple
           />
         </ListItemIcon>
-        <ListItemText primary={qid} sx={{ wordBreak: "break-all" }} />
+        <ListItemText primary={qid} sx={{ wordBreak: 'break-all' }} />
       </ListItemButton>
     </ListItem>
   );
@@ -58,7 +48,7 @@ const QuerySelection = ({
 }) => {
   const handleSelectSingleQuery = (qid) => {
     setSelectedQueryIds((prev) => {
-      console.log("CLICK");
+      console.log('CLICK');
       const next = new Set(prev);
       if (next.has(qid)) {
         next.delete(qid);
@@ -80,10 +70,10 @@ const QuerySelection = ({
   return (
     <Box
       sx={{
-        width: "200px",
+        width: '200px',
         borderRight: 1,
-        borderColor: "divider",
-        overflowY: "scroll",
+        borderColor: 'divider',
+        overflowY: 'scroll',
       }}
     >
       <List dense>
@@ -103,7 +93,7 @@ const QuerySelection = ({
             </ListItemIcon>
             <ListItemText
               primary="All queries"
-              sx={{ wordBreak: "break-all" }}
+              sx={{ wordBreak: 'break-all' }}
             />
           </ListItemButton>
         </ListItem>
@@ -135,7 +125,7 @@ const Watch = () => {
 
     for (const qid of selectedQueryIds) {
       const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
-      const webSocket = new WebSocket(baseUrl + "/" + qid);
+      const webSocket = new WebSocket(baseUrl + '/' + qid);
       websocketConnections.push(webSocket);
       webSocket.onmessage = (event) => {
         setData((prevData) => {
@@ -167,17 +157,14 @@ const Watch = () => {
           fontFamily: 'Consolas, "Courier New", monospace',
           p: 2,
           flex: 1,
-          width: "100%",
-          overflowY: "scroll",
-          display: "flex",
-          flexDirection: "column-reverse",
+          width: '100%',
+          overflowY: 'scroll',
+          display: 'flex',
+          flexDirection: 'column-reverse',
         }}
       >
         {data.map((d, idx) => (
-          <Box
-            className={`color-${d.qid % MAX_COLORS}`}
-            key={idx}
-          >
+          <Box className={`color-${d.qid % MAX_COLORS}`} key={idx}>
             {d.data}
           </Box>
         ))}

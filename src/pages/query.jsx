@@ -1,8 +1,8 @@
-import AddIcon from "@mui/icons-material/Add";
-import { Fab } from "@mui/material";
-import { Helmet } from "react-helmet";
-import Editor from "../components/Editor";
-import { useRef } from "react";
+import AddIcon from '@mui/icons-material/Add';
+import { Fab } from '@mui/material';
+import { Helmet } from 'react-helmet';
+import Editor from '../components/Editor';
+import { useRef } from 'react';
 
 const DEFAULT_QUERY = `SELECT * FROM S
 WHERE (TRIP as loc1; TRIP as loc2; TRIP as loc3)
@@ -21,8 +21,8 @@ const Query = () => {
   const handleAddQuery = async () => {
     const currentQuery = editorRef.current.getEditor().getValue();
     const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
-    const fetchRes = await fetch(baseUrl + "/add-query", {
-      method: "POST",
+    const fetchRes = await fetch(baseUrl + '/add-query', {
+      method: 'POST',
       body: currentQuery,
     });
     alert(`fetchRes: ${await fetchRes.text()}`);
@@ -34,14 +34,14 @@ const Query = () => {
       <Editor
         ref={editorRef}
         query={DEFAULT_QUERY}
-        sx={{ flex: 1, width: "100%", overflow: "hidden" }}
+        sx={{ flex: 1, width: '100%', overflow: 'hidden' }}
       />
       <Fab
         onClick={handleAddQuery}
         variant="extended"
         color="primary"
         sx={{
-          position: "absolute",
+          position: 'absolute',
           bottom: 32,
           right: 32,
         }}

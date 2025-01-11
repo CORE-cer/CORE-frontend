@@ -1,26 +1,32 @@
-import "@fontsource/roboto/300.css";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
-import { CssBaseline } from "@mui/material";
-import { createRoot } from "react-dom/client";
-import { Helmet } from "react-helmet";
-import { createBrowserRouter, Navigate, Outlet, RouterProvider, ScrollRestoration } from "react-router";
-import Navbar from "./components/Navbar.jsx";
-import DarkModeProvider from "./context/DarkModeContext.jsx";
-import "./monaco/setup";
-import Query from "./pages/query.jsx";
-import Watch from "./pages/watch.jsx";
-import "./style.scss";
+import '@fontsource/roboto/301.css';
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/500.css';
+import '@fontsource/roboto/700.css';
+import { CssBaseline } from '@mui/material';
+import { createRoot } from 'react-dom/client';
+import { Helmet } from 'react-helmet';
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  RouterProvider,
+  ScrollRestoration,
+} from 'react-router';
+import Navbar from './components/Navbar.jsx';
+import DarkModeProvider from './context/DarkModeContext.jsx';
+import './monaco/setup';
+import Query from './pages/query.jsx';
+import Watch from './pages/watch.jsx';
+import './style.scss';
 
 export const Main = () => {
   const router = createBrowserRouter([
     {
-      path: "*",
+      path: '*',
       element: <Navigate to="/" />,
     },
     {
-      path: "/",
+      path: '/',
       element: (
         <>
           <ScrollRestoration />
@@ -31,19 +37,19 @@ export const Main = () => {
       ),
       children: [
         {
-          path: "/",
+          path: '/',
           element: <div>TODO: Home</div>,
         },
         {
-          path: "/query",
+          path: '/query',
           element: <Query />,
         },
         {
-          path: "/watch",
+          path: '/watch',
           element: <Watch />,
         },
         {
-          path: "/about",
+          path: '/about',
           element: <div>TODO: About</div>,
         },
       ],
@@ -54,14 +60,14 @@ export const Main = () => {
     <>
       <Helmet
         title="CORE"
-        htmlAttributes={{ lang: "en" }}
+        htmlAttributes={{ lang: 'en' }}
         meta={[
           {
-            name: "description",
-            content: "CORE",
+            name: 'description',
+            content: 'CORE',
           },
           {
-            charSet: "utf-8",
+            charSet: 'utf-8',
           },
         ]}
       />
@@ -76,6 +82,6 @@ export const Main = () => {
   );
 };
 
-const rootElement = document.getElementById("root");
+const rootElement = document.getElementById('root');
 const root = createRoot(rootElement);
 root.render(<Main />);
