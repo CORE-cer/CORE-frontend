@@ -1,4 +1,4 @@
-import * as monaco from "monaco-editor-core";
+import * as monaco from 'monaco-editor-core';
 
 export default class COREDiagnosticsAdapter {
   static VALIDATION_TIMEOUT_MS = 200;
@@ -12,14 +12,17 @@ export default class COREDiagnosticsAdapter {
       let handle;
       this._listener[model.uri.toString()] = model.onDidChangeContent(() => {
         clearTimeout(handle);
-        handle = setTimeout(() => this._doValidate(model.uri), COREDiagnosticsAdapter.VALIDATION_TIMEOUT_MS);
+        handle = setTimeout(
+          () => this._doValidate(model.uri),
+          COREDiagnosticsAdapter.VALIDATION_TIMEOUT_MS
+        );
       });
 
       this._doValidate(model.uri);
     };
 
     const onModelRemoved = (model) => {
-      monaco.editor.setModelMarkers(model, "owner", []);
+      monaco.editor.setModelMarkers(model, 'owner', []);
 
       let uriStr = model.uri.toString();
       let listener = this._listener[uriStr];
@@ -57,6 +60,6 @@ export default class COREDiagnosticsAdapter {
     const model = monaco.editor.getModel(resource);
     const worker = await this._workerAccessor(model.getLanguageId(), resource);
     const errors = await worker.doValidation(resource.toString());
-    monaco.editor.setModelMarkers(model, "owner", errors);
+    monaco.editor.setModelMarkers(model, 'owner', errors);
   }
 }

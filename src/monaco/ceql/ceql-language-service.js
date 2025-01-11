@@ -1,8 +1,8 @@
-import antlr4 from "antlr4";
+import antlr4 from 'antlr4';
 
-import CEQLQueryLexer from "../../grammar/ceql/CEQLQueryLexer";
-import CEQLQueryParser from "../../grammar/ceql/CEQLQueryParser";
-import QueryErrorListener from "../query-error-listener";
+import CEQLQueryLexer from '../../grammar/ceql/CEQLQueryLexer';
+import CEQLQueryParser from '../../grammar/ceql/CEQLQueryParser';
+import QueryErrorListener from '../query-error-listener';
 
 export default class CEQLLanguageService {
   doValidation(document) {

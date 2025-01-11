@@ -1,4 +1,4 @@
-import CEQLLanguageService from "./ceql/ceql-language-service";
+import CEQLLanguageService from './ceql/ceql-language-service';
 
 export default class COREWorker {
   constructor(ctx) {

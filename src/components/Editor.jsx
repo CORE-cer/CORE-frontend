@@ -1,7 +1,7 @@
-import { useTheme } from "@emotion/react";
-import { Box } from "@mui/material";
-import * as monaco from "monaco-editor-core";
-import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
+import { useTheme } from '@emotion/react';
+import { Box } from '@mui/material';
+import * as monaco from 'monaco-editor-core';
+import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 const Editor = React.forwardRef(({ query, ...props }, ref) => {
   const theme = useTheme();
@@ -18,7 +18,9 @@ const Editor = React.forwardRef(({ query, ...props }, ref) => {
   );
 
   useEffect(() => {
-    monaco.editor.setTheme(theme.palette.mode === "dark" ? "ceql-dark" : "ceql-light");
+    monaco.editor.setTheme(
+      theme.palette.mode === 'dark' ? 'ceql-dark' : 'ceql-light'
+    );
   }, [theme.palette.mode]);
 
   useEffect(() => {
@@ -31,11 +33,11 @@ const Editor = React.forwardRef(({ query, ...props }, ref) => {
   useEffect(() => {
     setEditor(
       monaco.editor.create(monacoEl.current, {
-        theme: theme.palette.mode === "dark" ? "ceql-dark" : "ceql-light",
-        language: "ceql",
+        theme: theme.palette.mode === 'dark' ? 'ceql-dark' : 'ceql-light',
+        language: 'ceql',
         automaticLayout: true,
         minimap: { enabled: false },
-        renderWhitespace: "all",
+        renderWhitespace: 'all',
         tabSize: 2,
         fontSize: 20,
         scrollbar: {
@@ -55,6 +57,6 @@ const Editor = React.forwardRef(({ query, ...props }, ref) => {
   return <Box className="editor" ref={monacoEl} {...props}></Box>;
 });
 
-Editor.displayName = "Editor";
+Editor.displayName = 'Editor';
 
 export default Editor;

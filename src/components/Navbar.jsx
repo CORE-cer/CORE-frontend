@@ -1,7 +1,7 @@
-import { useTheme } from "@emotion/react";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
-import LightModeIcon from "@mui/icons-material/LightMode";
-import MenuIcon from "@mui/icons-material/Menu";
+import { useTheme } from '@emotion/react';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import MenuIcon from '@mui/icons-material/Menu';
 import {
   AppBar,
   Box,
@@ -16,13 +16,13 @@ import {
   Toolbar,
   Tooltip,
   Typography,
-} from "@mui/material";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { useMemo, useState } from "react";
-import { matchPath, useLocation } from "react-router";
-import { useDarkModeContext } from "../context/DarkModeContext";
-import { DRAWER_WIDTH } from "../MUIThemes";
-import Main from "./Main";
+} from '@mui/material';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useMemo, useState } from 'react';
+import { matchPath, useLocation } from 'react-router';
+import { useDarkModeContext } from '../context/DarkModeContext';
+import { DRAWER_WIDTH } from '../MUIThemes';
+import Main from './Main';
 
 const Logo = () => {
   return (
@@ -31,10 +31,10 @@ const Logo = () => {
         href="/"
         sx={{
           mr: 4,
-          display: "flex",
+          display: 'flex',
           fontWeight: 700,
-          color: "inherit",
-          textDecoration: "none",
+          color: 'inherit',
+          textDecoration: 'none',
         }}
       >
         CORE
@@ -63,7 +63,7 @@ const DrawerListItem = ({ text, href }) => {
 
 export default function Navbar({ children }) {
   const theme = useTheme();
-  const isBelowMd = useMediaQuery(theme.breakpoints.down("md"));
+  const isBelowMd = useMediaQuery(theme.breakpoints.down('md'));
   const darkModeContext = useDarkModeContext();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -77,8 +77,11 @@ export default function Navbar({ children }) {
         color="transparent"
         sx={{
           backgroundColor:
-            theme.palette.mode === "dark" ? theme.palette.background.paper : theme.palette.background.paper,
-          zIndex: (theme) => (isBelowMd ? theme.zIndex.appBar : theme.zIndex.drawer + 1),
+            theme.palette.mode === 'dark'
+              ? theme.palette.background.paper
+              : theme.palette.background.paper,
+          zIndex: (theme) =>
+            isBelowMd ? theme.zIndex.appBar : theme.zIndex.drawer + 1,
         }}
       >
         <Toolbar variant="dense">
@@ -89,18 +92,22 @@ export default function Navbar({ children }) {
             sx={{
               mr: 1,
               display: {
-                xs: "flex",
-                md: "none",
+                xs: 'flex',
+                md: 'none',
               },
             }}
           >
             <MenuIcon />
           </IconButton>
           <Logo />
-          <Box sx={{ flexGrow: 1, display: "flex" }} />
+          <Box sx={{ flexGrow: 1, display: 'flex' }} />
           <Tooltip title="Toggle Dark Mode" sx={{ flexGrow: 0 }}>
             <IconButton edge="end" onClick={darkModeContext.toggleDarkMode}>
-              {theme.palette.mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+              {theme.palette.mode === 'dark' ? (
+                <LightModeIcon />
+              ) : (
+                <DarkModeIcon />
+              )}
             </IconButton>
           </Tooltip>
         </Toolbar>
@@ -109,14 +116,14 @@ export default function Navbar({ children }) {
       <Drawer
         open={isBelowMd ? drawerOpen : false}
         onClose={() => setDrawerOpen(false)}
-        variant={isBelowMd ? "temporary" : "permanent"}
+        variant={isBelowMd ? 'temporary' : 'permanent'}
         anchor="left"
         sx={{
           width: DRAWER_WIDTH,
           flexShrink: 0,
-          "& .MuiDrawer-paper": {
+          '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
-            boxSizing: "border-box",
+            boxSizing: 'border-box',
           },
         }}
       >

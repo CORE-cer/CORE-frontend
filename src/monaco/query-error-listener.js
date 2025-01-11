@@ -1,4 +1,4 @@
-import antlr4 from "antlr4";
+import antlr4 from 'antlr4';
 
 export default class QueryErrorListener extends antlr4.error.ErrorListener {
   constructor() {
