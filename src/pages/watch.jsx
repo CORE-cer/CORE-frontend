@@ -1,6 +1,5 @@
 import {
   Box,
-  Drawer,
   Divider,
   List,
   ListItem,
@@ -8,7 +7,6 @@ import {
   ListItemText,
   Checkbox,
   ListItemIcon,
-  FormControlLabel,
 } from "@mui/material";
 import { LoremIpsum } from "lorem-ipsum";
 import { useEffect, useState } from "react";
@@ -19,12 +17,19 @@ const MAX_COLORS = 16;
 
 const lorem = new LoremIpsum();
 
-const getFakeQueryIds = () => {
-  return Array.from({ length: 23 }, (_, i) => i);
+const getQueries = async () => {
+  const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
+  const fetchRes = await fetch(baseUrl + "/all-queries-info", {
+    method: "GET",
+  });
+  return await fetchRes.json();
 };
 
 const fakeData = (qid) => {
-  return { qid, data: `[${new Date().toISOString()}] Query #${qid} ${lorem.generateWords(5)}` };
+  return {
+    qid,
+    data: `[${new Date().toISOString()}] Query #${qid} ${lorem.generateWords(5)}`,
+  };
 };
 
 const QuerySelectionItem = ({ qid, checked, handleChange }) => {
@@ -46,7 +51,11 @@ const QuerySelectionItem = ({ qid, checked, handleChange }) => {
   );
 };
 
-const QuerySelection = ({ queryIds, selectedQueryIds, setSelectedQueryIds }) => {
+const QuerySelection = ({
+  queryIds,
+  selectedQueryIds,
+  setSelectedQueryIds,
+}) => {
   const handleSelectSingleQuery = (qid) => {
     setSelectedQueryIds((prev) => {
       console.log("CLICK");
@@ -69,7 +78,14 @@ const QuerySelection = ({ queryIds, selectedQueryIds, setSelectedQueryIds }) => 
   };
 
   return (
-    <Box sx={{ width: "200px", borderRight: 1, borderColor: "divider", overflowY: "scroll" }}>
+    <Box
+      sx={{
+        width: "200px",
+        borderRight: 1,
+        borderColor: "divider",
+        overflowY: "scroll",
+      }}
+    >
       <List dense>
         <ListItem disablePadding>
           <ListItemButton onClick={handleSelectAll}>
@@ -77,12 +93,18 @@ const QuerySelection = ({ queryIds, selectedQueryIds, setSelectedQueryIds }) => 
               <Checkbox
                 color="text.primary"
                 checked={selectedQueryIds.size === queryIds.length}
-                indeterminate={selectedQueryIds.size > 0 && selectedQueryIds.size !== queryIds.length}
+                indeterminate={
+                  selectedQueryIds.size > 0 &&
+                  selectedQueryIds.size !== queryIds.length
+                }
                 disableFocusRipple
                 disableTouchRipple
               />
             </ListItemIcon>
-            <ListItemText primary="All queries" sx={{ wordBreak: "break-all" }} />
+            <ListItemText
+              primary="All queries"
+              sx={{ wordBreak: "break-all" }}
+            />
           </ListItemButton>
         </ListItem>
         <Divider />
@@ -100,36 +122,43 @@ const QuerySelection = ({ queryIds, selectedQueryIds, setSelectedQueryIds }) => 
 };
 
 const Watch = () => {
-  const [queryIds, setQueryIds] = useState([]);
+  const [queries, setQueries] = useState([]);
   const [selectedQueryIds, setSelectedQueryIds] = useState(new Set());
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    setQueryIds(getFakeQueryIds());
+    async function setQueryData() {
+      setQueries(await getQueries());
+    }
+    setQueryData();
+    const websocketConnections = [];
 
-    // This simulates a websocket connection
-    const interval = setInterval(() => {
-      setData((prevData) => {
-        const newData = [];
-        for (const qid of selectedQueryIds) {
-          newData.push(fakeData(qid));
-        }
-        const updatedData = [...newData, ...prevData];
-        if (updatedData.length > MAX_DATA) {
-          return updatedData.slice(0, MAX_DATA);
-        }
-        return updatedData;
-      });
-    }, 400);
-
-    return () => clearInterval(interval);
+    for (const qid of selectedQueryIds) {
+      const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
+      const webSocket = new WebSocket(baseUrl + "/" + qid);
+      websocketConnections.push(webSocket);
+      webSocket.onmessage = (event) => {
+        setData((prevData) => {
+          const updatedData = [{ qid, data: event.data }, ...prevData];
+          if (updatedData.length > MAX_DATA) {
+            return updatedData.slice(0, MAX_DATA);
+          }
+          return updatedData;
+        });
+      };
+    }
+    return () => {
+      for (const webSocket of websocketConnections) {
+        webSocket.close();
+      }
+    };
   }, [selectedQueryIds]);
 
   return (
     <>
       <Helmet title={`Watch | CORE`} />
       <QuerySelection
-        queryIds={queryIds}
+        queryIds={queries.map((q) => Number(q.result_handler_identifier))}
         selectedQueryIds={selectedQueryIds}
         setSelectedQueryIds={setSelectedQueryIds}
       />
@@ -145,7 +174,10 @@ const Watch = () => {
         }}
       >
         {data.map((d, idx) => (
-          <Box className={`color-${queryIds.indexOf(d.qid) % MAX_COLORS}`} key={idx}>
+          <Box
+            className={`color-${d.qid % MAX_COLORS}`}
+            key={idx}
+          >
             {d.data}
           </Box>
         ))}

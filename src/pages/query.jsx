@@ -18,15 +18,24 @@ LIMIT 1000
 const Query = () => {
   const editorRef = useRef(null);
 
-  const handleAddQuery = () => {
+  const handleAddQuery = async () => {
     const currentQuery = editorRef.current.getEditor().getValue();
-    alert(`TODO: Add the query: ${currentQuery}`);
+    const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
+    const fetchRes = await fetch(baseUrl + "/add-query", {
+      method: "POST",
+      body: currentQuery,
+    });
+    alert(`fetchRes: ${await fetchRes.text()}`);
   };
 
   return (
     <>
       <Helmet title={`Query | CORE`} />
-      <Editor ref={editorRef} query={DEFAULT_QUERY} sx={{ flex: 1, width: "100%", overflow: "hidden" }} />
+      <Editor
+        ref={editorRef}
+        query={DEFAULT_QUERY}
+        sx={{ flex: 1, width: "100%", overflow: "hidden" }}
+      />
       <Fab
         onClick={handleAddQuery}
         variant="extended"
