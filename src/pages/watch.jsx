@@ -7,12 +7,14 @@ import {
   ListItemText,
   Checkbox,
   ListItemIcon,
+  Paper,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Helmet } from 'react-helmet';
+import { Virtuoso } from 'react-virtuoso';
 
-const MAX_DATA = 100;
 const MAX_COLORS = 16;
+const QUERY_SELECTION_WIDTH = 200;
 
 const getQueries = async () => {
   const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
@@ -48,7 +50,6 @@ const QuerySelection = ({
 }) => {
   const handleSelectSingleQuery = (qid) => {
     setSelectedQueryIds((prev) => {
-      console.log('CLICK');
       const next = new Set(prev);
       if (next.has(qid)) {
         next.delete(qid);
@@ -70,7 +71,7 @@ const QuerySelection = ({
   return (
     <Box
       sx={{
-        width: '200px',
+        width: QUERY_SELECTION_WIDTH,
         borderRight: 1,
         borderColor: 'divider',
         overflowY: 'scroll',
@@ -114,60 +115,91 @@ const QuerySelection = ({
 const Watch = () => {
   const [queries, setQueries] = useState([]);
   const [selectedQueryIds, setSelectedQueryIds] = useState(new Set());
-  const [data, setData] = useState([]);
+  const [data, setData] = useState([
+    { qid: 1, data: new Date().toISOString() },
+  ]);
+
+  const virtuoso = useRef(null);
 
   useEffect(() => {
-    async function setQueryData() {
-      setQueries(await getQueries());
-    }
-    setQueryData();
-    const websocketConnections = [];
+    const timer = setInterval(() => {
+      setData((prevData) => [
+        ...prevData,
+        { qid: 3, data: new Date().toISOString() },
+      ]);
+      // dataContainerRef.current.scrollBy(0,-100)
+    }, 50);
 
-    for (const qid of selectedQueryIds) {
-      const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
-      const webSocket = new WebSocket(baseUrl + '/' + qid);
-      websocketConnections.push(webSocket);
-      webSocket.onmessage = (event) => {
-        setData((prevData) => {
-          const updatedData = [{ qid, data: event.data }, ...prevData];
-          if (updatedData.length > MAX_DATA) {
-            return updatedData.slice(0, MAX_DATA);
-          }
-          return updatedData;
-        });
-      };
-    }
-    return () => {
-      for (const webSocket of websocketConnections) {
-        webSocket.close();
-      }
-    };
+    // async function setQueryData() {
+    //   setQueries(await getQueries());
+    // }
+    // setQueryData();
+    // const websocketConnections = [];
+
+    // for (const qid of selectedQueryIds) {
+    //   const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
+    //   const webSocket = new WebSocket(baseUrl + '/' + qid);
+    //   websocketConnections.push(webSocket);
+    //   webSocket.onmessage = (event) => {
+    //     setData((prevData) => {
+    //       const updatedData = [{ qid, data: event.data }, ...prevData];
+    //       if (updatedData.length > MAX_DATA) {
+    //         return updatedData.slice(0, MAX_DATA);
+    //       }
+    //       return updatedData;
+    //     });
+    //   };
+    // }
+    // return () => {
+    //   for (const webSocket of websocketConnections) {
+    //     webSocket.close();
+    //   }
+    // };
   }, [selectedQueryIds]);
+
+  const renderItem = (index) => {
+    const item = data[index];
+    return (
+      <Box
+        className={`color-${item.qid % MAX_COLORS}`}
+        sx={{
+          px: 1,
+          fontFamily: 'Consolas, "Courier New", monospace',
+          wordBreak: 'break-all',
+        }}
+      >
+        {item.data}
+      </Box>
+    );
+  };
 
   return (
     <>
       <Helmet title={`Watch | CORE`} />
-      <QuerySelection
-        queryIds={queries.map((q) => Number(q.result_handler_identifier))}
-        selectedQueryIds={selectedQueryIds}
-        setSelectedQueryIds={setSelectedQueryIds}
-      />
-      <Box
-        sx={{
-          fontFamily: 'Consolas, "Courier New", monospace',
-          p: 2,
-          flex: 1,
-          width: '100%',
-          overflowY: 'scroll',
-          display: 'flex',
-          flexDirection: 'column-reverse',
-        }}
-      >
-        {data.map((d, idx) => (
-          <Box className={`color-${d.qid % MAX_COLORS}`} key={idx}>
-            {d.data}
-          </Box>
-        ))}
+      <Box sx={{ display: 'flex', width: '100%', height: '100%' }}>
+        <QuerySelection
+          queryIds={queries.map((q) => Number(q.result_handler_identifier))}
+          selectedQueryIds={selectedQueryIds}
+          setSelectedQueryIds={setSelectedQueryIds}
+        />
+        <Box
+          sx={{
+            flex: 1,
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          <Virtuoso
+            increaseViewportBy={{ top: 400, bottom: 400 }}
+            ref={virtuoso}
+            alignToBottom
+            // Auto-scroll if the window is at the bottom
+            followOutput={(isAtBottom) => (isAtBottom ? 'auto' : false)}
+            style={{ flex: 1 }}
+            totalCount={data.length}
+            itemContent={renderItem}
+          />
+        </Box>
       </Box>
     </>
   );
