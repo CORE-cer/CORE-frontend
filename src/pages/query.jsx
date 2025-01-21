@@ -41,7 +41,7 @@ const Query = () => {
         variant="extended"
         color="primary"
         sx={{
-          position: 'absolute',
+          position: 'fixed',
           bottom: 32,
           right: 32,
         }}

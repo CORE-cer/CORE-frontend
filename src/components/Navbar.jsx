@@ -75,6 +75,7 @@ export default function Navbar({ children }) {
         variant="outlined"
         elevation={0}
         color="transparent"
+        components={{}}
         sx={{
           backgroundColor:
             theme.palette.mode === 'dark'
