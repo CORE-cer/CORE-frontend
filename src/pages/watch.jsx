@@ -1,6 +1,7 @@
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
+  Button,
   Divider,
   List,
   Paper,
@@ -27,25 +28,59 @@ const getQueries = async () => {
   const fetchRes = await fetch(baseUrl + '/all-queries-info', {
     method: 'GET',
   });
-  return await fetchRes.json();
+  const queries = await fetchRes.json();
+  return queries.filter((query) => query.active);
 };
 
-const QuerySelectionItem = ({ qid, checked, handleChange }) => {
+const inactivateQuery = async (qid) => {
+  const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
+  const fetchRes = await fetch(baseUrl + '/inactivate-query/' + qid, {
+    method: 'DELETE',
+  });
+  if (!fetchRes.ok) {
+    throw new Error('Failed to inactivate query');
+  }
+  console.log('Successfully inactivated query', qid);
+};
+
+const QuerySelectionItem = ({
+  qid,
+  checked,
+  handleChange,
+  handleInactivateQuery,
+}) => {
   return (
-    <ListItem disablePadding>
-      <ListItemButton onClick={handleChange}>
+    <>
+      <ListItem disablePadding>
+        <ListItemText
+          primary={qid}
+          sx={{ wordBreak: 'normal', textAlign: 'center' }}
+        />
+      </ListItem>
+      <ListItem disablePadding>
         <ListItemIcon>
-          <Checkbox
-            color="text.primary"
-            checked={checked}
-            className={`color-${qid % MAX_COLORS}`}
-            disableFocusRipple
-            disableTouchRipple
-          />
+          <ListItemButton onClick={handleChange}>
+            <Checkbox
+              color="text.primary"
+              checked={checked}
+              className={`color-${qid % MAX_COLORS}`}
+              disableFocusRipple
+              disableTouchRipple
+              sx={{ margin: 'auto' }}
+            />
+          </ListItemButton>
         </ListItemIcon>
-        <ListItemText primary={qid} sx={{ wordBreak: 'break-all' }} />
-      </ListItemButton>
-    </ListItem>
+        <Button
+          onClick={handleInactivateQuery}
+          variant="contained"
+          color="primary"
+          size="small"
+          sx={{ margin: 'auto' }}
+        >
+          Delete
+        </Button>
+      </ListItem>
+    </>
   );
 };
 
@@ -72,6 +107,13 @@ const QuerySelection = ({
     } else {
       setSelectedQueryIds(new Set());
     }
+  };
+
+  const handleInactivateQuery = (qid) => {
+    if (selectedQueryIds.has(qid)) {
+      handleSelectSingleQuery(qid);
+    }
+    inactivateQuery(qid);
   };
 
   return (
@@ -117,6 +159,7 @@ const QuerySelection = ({
             qid={qid}
             checked={selectedQueryIds.has(qid)}
             handleChange={() => handleSelectSingleQuery(qid)}
+            handleInactivateQuery={() => handleInactivateQuery(qid)}
           />
         ))}
       </List>
