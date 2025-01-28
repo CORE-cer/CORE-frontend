@@ -18,6 +18,7 @@ import './monaco/setup';
 import Query from './pages/query.jsx';
 import Watch from './pages/watch.jsx';
 import './style.scss';
+import { SnackbarProvider } from 'notistack';
 
 export const Main = () => {
   const router = createBrowserRouter([
@@ -73,10 +74,16 @@ export const Main = () => {
       />
       <DarkModeProvider>
         <CssBaseline />
-        <RouterProvider router={router}>
-          <Navbar />
-          <Outlet />
-        </RouterProvider>
+        <SnackbarProvider
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          maxSnack={3}
+          autoHideDuration={3000}
+        >
+          <RouterProvider router={router}>
+            <Navbar />
+            <Outlet />
+          </RouterProvider>
+        </SnackbarProvider>
       </DarkModeProvider>
     </>
   );
