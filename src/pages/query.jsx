@@ -1,23 +1,29 @@
+import { useTheme } from '@emotion/react';
 import AddIcon from '@mui/icons-material/Add';
 import {
   Box,
-  Fab,
   Button,
   Dialog,
-  DialogTitle,
   DialogActions,
   DialogContent,
   DialogContentText,
+  DialogTitle,
+  Divider,
+  Fab,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
   TextField,
 } from '@mui/material';
+import JsonView from '@uiw/react-json-view';
+import { darkTheme } from '@uiw/react-json-view/dark';
+import { lightTheme } from '@uiw/react-json-view/light';
+import { enqueueSnackbar } from 'notistack';
+import { useCallback, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import Editor from '../components/Editor';
-import { useRef, useState } from 'react';
-import { enqueueSnackbar } from 'notistack';
-import JsonView from '@uiw/react-json-view';
-import { lightTheme } from '@uiw/react-json-view/light';
-import { darkTheme } from '@uiw/react-json-view/dark';
-import { useTheme } from '@emotion/react';
+import examples from '../data/examples';
 
 const DEFAULT_QUERY = `SELECT * FROM S
 WHERE (TRIP as loc1; TRIP as loc2; TRIP as loc3)
@@ -119,12 +125,17 @@ const CustomJsonView = ({ schema }) => {
   return (
     <JsonView
       enableClipboard={false}
-      collapsed={false}
+      // collapsed={false}
       indentWidth={16}
       value={schema}
       style={theme.palette.mode === 'dark' ? darkTheme : lightTheme}
       displayObjectSize
       displayDataTypes
+      collapsed={false}
+      shouldExpandNodeInitially={(isExpanded, { keys }) => {
+        if (keys.length > 0 && keys[0] === 'sell') return true;
+        return isExpanded;
+      }}
     >
       <JsonView.Quote render={() => <></>} />
       <JsonView.Float
@@ -151,12 +162,34 @@ const Schema = (props) => {
   );
 };
 
+const Examples = ({ setExample }) => {
+  return (
+    <List dense disablePadding sx={{ flex: 1, overflow: 'auto' }}>
+      {examples.map((example, idx) => (
+        <ListItem key={idx} disablePadding>
+          <ListItemButton onClick={() => setExample(example)}>
+            <ListItemText
+              primary={example.title}
+              secondary={example.description}
+            />
+          </ListItemButton>
+        </ListItem>
+      ))}
+    </List>
+  );
+};
+
 const Query = () => {
   const editorRef = useRef(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [queryName, setQueryName] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleSetExample = useCallback((example) => {
+    const text = `/*${example.description}*/\n${example.query}\n`;
+    editorRef.current.getEditor().setValue(text);
+  }, []);
 
   const handleModalClose = () => {
     if (loading) return; // Prevent closing modal while query is being added
@@ -206,6 +239,10 @@ const Query = () => {
         variant="extended"
         color="primary"
         sx={{
+          opacity: '0.5 !important',
+          '&:hover': {
+            opacity: '1 !important',
+          },
           position: 'fixed',
           bottom: 32,
           right: 32,
@@ -235,10 +272,14 @@ const Query = () => {
             borderLeft: 1,
             borderColor: 'divider',
             flex: 1,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
+          <Examples setExample={handleSetExample} />
+          <Divider />
           <Schema />
-          {'Examples...'}
         </Box>
       </Box>
     </>
