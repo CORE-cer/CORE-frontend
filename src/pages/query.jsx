@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import {
+  Box,
   Fab,
   Button,
   Dialog,
@@ -13,6 +14,10 @@ import { Helmet } from 'react-helmet';
 import Editor from '../components/Editor';
 import { useRef, useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
+import JsonView from '@uiw/react-json-view';
+import { lightTheme } from '@uiw/react-json-view/light';
+import { darkTheme } from '@uiw/react-json-view/dark';
+import { useTheme } from '@emotion/react';
 
 const DEFAULT_QUERY = `SELECT * FROM S
 WHERE (TRIP as loc1; TRIP as loc2; TRIP as loc3)
@@ -77,6 +82,75 @@ const AddQueryDialog = ({
   );
 };
 
+const SCHEMA = {
+  buy: {
+    product_id: 'ETH-USD',
+    open_24h: 1310.79,
+    low_24h: 1280.52,
+    volume_30d: 245532.79269678,
+    best_bid_size: 0.46688654,
+    best_ask_size: 1.5663704,
+    price: 1285.22,
+    volume_24h: 245532.79269678,
+    high_24h: 1313.8,
+    best_bid: 1285.04,
+    best_ask: 1285.27,
+    time: new Date('2022-10-19T23:28:22.061769Z'),
+  },
+  sell: {
+    product_id: 'ETH-USD',
+    open_24h: 1310.79,
+    low_24h: 1280.52,
+    volume_30d: 245532.79269678,
+    best_bid_size: 0.46688654,
+    best_ask_size: 1.5663704,
+    price: 1285.22,
+    volume_24h: 245532.79269678,
+    high_24h: 1313.8,
+    best_bid: 1285.04,
+    best_ask: 1285.27,
+    time: new Date('2022-10-19T23:28:22.061769Z'),
+  },
+};
+
+const CustomJsonView = ({ schema }) => {
+  const theme = useTheme();
+
+  return (
+    <JsonView
+      enableClipboard={false}
+      collapsed={false}
+      indentWidth={16}
+      value={schema}
+      style={theme.palette.mode === 'dark' ? darkTheme : lightTheme}
+      displayObjectSize
+      displayDataTypes
+    >
+      <JsonView.Quote render={() => <></>} />
+      <JsonView.Float
+        render={({ children, ...rest }, { type }) => {
+          if (type === 'type') return <span {...rest}>{'double'}</span>;
+          return <span {...rest}>{children}</span>;
+        }}
+      />
+      <JsonView.Date
+        render={({ children, ...rest }, { type }) => {
+          if (type === 'type') return <span {...rest}>{'PRIMARY_TIME'}</span>;
+          return <span {...rest}>{children}</span>;
+        }}
+      />
+    </JsonView>
+  );
+};
+
+const Schema = (props) => {
+  return (
+    <Box {...props}>
+      <CustomJsonView schema={SCHEMA} />
+    </Box>
+  );
+};
+
 const Query = () => {
   const editorRef = useRef(null);
 
@@ -127,11 +201,6 @@ const Query = () => {
         queryName={queryName}
         setQueryName={setQueryName}
       />
-      <Editor
-        ref={editorRef}
-        query={DEFAULT_QUERY}
-        sx={{ flex: 1, width: '100%', overflow: 'hidden' }}
-      />
       <Fab
         onClick={handleAddQuery}
         variant="extended"
@@ -145,6 +214,33 @@ const Query = () => {
         <AddIcon sx={{ mr: 1 }} />
         Add query
       </Fab>
+      <Box
+        sx={{
+          minHeight: 800,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+        }}
+      >
+        <Editor
+          ref={editorRef}
+          query={DEFAULT_QUERY}
+          sx={{
+            overflow: 'hidden',
+            flex: 2,
+          }}
+        />
+        <Box
+          sx={{
+            borderLeft: 1,
+            borderColor: 'divider',
+            flex: 1,
+          }}
+        >
+          <Schema />
+          {'Examples...'}
+        </Box>
+      </Box>
     </>
   );
 };
