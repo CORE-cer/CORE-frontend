@@ -9,12 +9,16 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
+  Tooltip,
   Fab,
+  IconButton,
   List,
   ListItem,
   ListItemButton,
   ListItemText,
+  ListSubheader,
   TextField,
+  Typography,
 } from '@mui/material';
 import JsonView from '@uiw/react-json-view';
 import { darkTheme } from '@uiw/react-json-view/dark';
@@ -24,17 +28,6 @@ import { useCallback, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import Editor from '../components/Editor';
 import examples from '../data/examples';
-
-const DEFAULT_QUERY = `SELECT * FROM S
-WHERE (TRIP as loc1; TRIP as loc2; TRIP as loc3)
-FILTER
-    loc1[pickup_zone = 'East Harlem North' and dropoff_zone = 'Midwood'] AND
-    loc2[pickup_zone = 'Midwood' AND dropoff_zone = 'Gravesend'] AND
-    loc3[pickup_zone = 'Gravesend' AND dropoff_zone = 'West Brighton']
-WITHIN 1000 EVENTS
-CONSUME BY ANY
-LIMIT 1000
-`;
 
 const AddQueryDialog = ({
   loading,
@@ -89,33 +82,35 @@ const AddQueryDialog = ({
 };
 
 const SCHEMA = {
-  buy: {
-    product_id: 'ETH-USD',
-    open_24h: 1310.79,
-    low_24h: 1280.52,
-    volume_30d: 245532.79269678,
-    best_bid_size: 0.46688654,
-    best_ask_size: 1.5663704,
-    price: 1285.22,
-    volume_24h: 245532.79269678,
-    high_24h: 1313.8,
-    best_bid: 1285.04,
-    best_ask: 1285.27,
-    time: new Date('2022-10-19T23:28:22.061769Z'),
-  },
-  sell: {
-    product_id: 'ETH-USD',
-    open_24h: 1310.79,
-    low_24h: 1280.52,
-    volume_30d: 245532.79269678,
-    best_bid_size: 0.46688654,
-    best_ask_size: 1.5663704,
-    price: 1285.22,
-    volume_24h: 245532.79269678,
-    high_24h: 1313.8,
-    best_bid: 1285.04,
-    best_ask: 1285.27,
-    time: new Date('2022-10-19T23:28:22.061769Z'),
+  Ticker: {
+    buy: {
+      product_id: 'ETH-USD',
+      open_24h: 1310.79,
+      low_24h: 1280.52,
+      volume_30d: 245532.79269678,
+      best_bid_size: 0.46688654,
+      best_ask_size: 1.5663704,
+      price: 1285.22,
+      volume_24h: 245532.79269678,
+      high_24h: 1313.8,
+      best_bid: 1285.04,
+      best_ask: 1285.27,
+      time: new Date('2022-10-19T23:28:22.061769Z'),
+    },
+    sell: {
+      product_id: 'ETH-USD',
+      open_24h: 1310.79,
+      low_24h: 1280.52,
+      volume_30d: 245532.79269678,
+      best_bid_size: 0.46688654,
+      best_ask_size: 1.5663704,
+      price: 1285.22,
+      volume_24h: 245532.79269678,
+      high_24h: 1313.8,
+      best_bid: 1285.04,
+      best_ask: 1285.27,
+      time: new Date('2022-10-19T23:28:22.061769Z'),
+    },
   },
 };
 
@@ -125,17 +120,12 @@ const CustomJsonView = ({ schema }) => {
   return (
     <JsonView
       enableClipboard={false}
-      // collapsed={false}
+      collapsed={false}
       indentWidth={16}
       value={schema}
       style={theme.palette.mode === 'dark' ? darkTheme : lightTheme}
       displayObjectSize
       displayDataTypes
-      collapsed={false}
-      shouldExpandNodeInitially={(isExpanded, { keys }) => {
-        if (keys.length > 0 && keys[0] === 'sell') return true;
-        return isExpanded;
-      }}
     >
       <JsonView.Quote render={() => <></>} />
       <JsonView.Float
@@ -164,16 +154,25 @@ const Schema = (props) => {
 
 const Examples = ({ setExample }) => {
   return (
-    <List dense disablePadding sx={{ flex: 1, overflow: 'auto' }}>
+    <List
+      dense
+      // disablePadding
+      sx={{ flex: 1, overflow: 'auto' }}
+      subheader={
+        <ListSubheader sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          {'Examples'}
+        </ListSubheader>
+      }
+    >
       {examples.map((example, idx) => (
-        <ListItem key={idx} disablePadding>
-          <ListItemButton onClick={() => setExample(example)}>
-            <ListItemText
-              primary={example.title}
-              secondary={example.description}
-            />
-          </ListItemButton>
-        </ListItem>
+        <>
+          <ListItem key={idx} disableGutters>
+            <ListItemButton onClick={() => setExample(example)}>
+              <ListItemText primary={`${idx + 1}. ${example.title}`} />
+            </ListItemButton>
+          </ListItem>
+          <Divider variant="middle" />
+        </>
       ))}
     </List>
   );
@@ -187,7 +186,7 @@ const Query = () => {
   const [loading, setLoading] = useState(false);
 
   const handleSetExample = useCallback((example) => {
-    const text = `/*${example.description}*/\n${example.query}\n`;
+    const text = `/*${example.title}*/\n${example.query}\n`;
     editorRef.current.getEditor().setValue(text);
   }, []);
 
@@ -239,10 +238,6 @@ const Query = () => {
         variant="extended"
         color="primary"
         sx={{
-          opacity: '0.5 !important',
-          '&:hover': {
-            opacity: '1 !important',
-          },
           position: 'fixed',
           bottom: 32,
           right: 32,
@@ -261,7 +256,6 @@ const Query = () => {
       >
         <Editor
           ref={editorRef}
-          query={DEFAULT_QUERY}
           sx={{
             overflow: 'hidden',
             flex: 2,

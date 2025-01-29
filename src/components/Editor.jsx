@@ -24,9 +24,9 @@ const Editor = React.forwardRef(({ query, ...props }, ref) => {
   }, [theme.palette.mode]);
 
   useEffect(() => {
-    if (editor && query) {
+    if (editor) {
       const model = editor.getModel();
-      model.setValue(query);
+      model.setValue(query || '');
     }
   }, [editor, query]);
 

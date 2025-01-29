@@ -133,7 +133,7 @@ export default function Navbar({ children }) {
         </Toolbar>
         <Divider />
         <List dense>
-          <DrawerListItem text="Query" href="/query" />
+          <DrawerListItem text="Query" href="/" />
           <DrawerListItem text="Watch" href="/watch" />
           <DrawerListItem text="About" href="/about" />
         </List>

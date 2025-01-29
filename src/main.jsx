@@ -39,10 +39,6 @@ export const Main = () => {
       children: [
         {
           path: '/',
-          element: <div>TODO: Home</div>,
-        },
-        {
-          path: '/query',
           element: <Query />,
         },
         {
