@@ -204,10 +204,10 @@ const Query = () => {
       const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
       const res = await fetch(baseUrl + '/add-query', {
         method: 'POST',
-        body: {
+        body: JSON.stringify({
           query: currentQuery,
           query_name: queryName,
-        },
+        }),
       });
       if (!res.ok) {
         throw new Error(await res.text());
