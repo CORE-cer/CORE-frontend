@@ -46,7 +46,7 @@ const inactivateQuery = async (qid) => {
 };
 
 const QuerySelectionItem = ({
-  qid,
+  query,
   checked,
   handleChange,
   handleInactivateQuery,
@@ -55,11 +55,13 @@ const QuerySelectionItem = ({
     <ListItem
       disablePadding
       secondaryAction={
-        <Tooltip title={`Remove query ${qid}`} arrow placement="right">
+        <Tooltip title={`Remove query`} arrow placement="right">
           <IconButton
             size="small"
             edge="end"
-            onClick={() => handleInactivateQuery(qid)}
+            onClick={() =>
+              handleInactivateQuery(query.result_handler_identifier)
+            }
           >
             <DeleteIcon fontSize="small" color="error" />
           </IconButton>
@@ -71,23 +73,21 @@ const QuerySelectionItem = ({
           <Checkbox
             color="text.primary"
             checked={checked}
-            className={`color-${qid % MAX_COLORS}`}
+            className={`color-${query.result_handler_identifier % MAX_COLORS}`}
             disableFocusRipple
             disableTouchRipple
-            sx={{ margin: 'auto' }}
           />
         </ListItemIcon>
-        <ListItemText primary={qid} sx={{ wordBreak: 'break-all' }} />
+        <ListItemText
+          primary={query.query_name}
+          sx={{ wordBreak: 'break-all' }}
+        />
       </ListItemButton>
     </ListItem>
   );
 };
 
-const QuerySelection = ({
-  queryIds,
-  selectedQueryIds,
-  setSelectedQueryIds,
-}) => {
+const QuerySelection = ({ queries, selectedQueryIds, setSelectedQueryIds }) => {
   const handleSelectSingleQuery = (qid) => {
     setSelectedQueryIds((prev) => {
       const next = new Set(prev);
@@ -102,16 +102,15 @@ const QuerySelection = ({
 
   const handleSelectAll = () => {
     if (selectedQueryIds.size === 0) {
-      setSelectedQueryIds(new Set(queryIds));
+      setSelectedQueryIds(
+        new Set(queries.map((q) => q.result_handler_identifier))
+      );
     } else {
       setSelectedQueryIds(new Set());
     }
   };
 
   const handleInactivateQuery = (qid) => {
-    if (selectedQueryIds.has(qid)) {
-      handleSelectSingleQuery(qid);
-    }
     inactivateQuery(qid);
   };
 
@@ -127,19 +126,18 @@ const QuerySelection = ({
         <ListItem disablePadding>
           <ListItemButton
             onClick={handleSelectAll}
-            disabled={queryIds.length === 0}
+            disabled={queries.length === 0}
           >
             <ListItemIcon>
               <Checkbox
-                disabled={queryIds.length === 0}
+                disabled={queries.length === 0}
                 color="text.primary"
                 checked={
-                  queryIds.length > 0 &&
-                  selectedQueryIds.size === queryIds.length
+                  queries.length > 0 && selectedQueryIds.size === queries.length
                 }
                 indeterminate={
                   selectedQueryIds.size > 0 &&
-                  selectedQueryIds.size !== queryIds.length
+                  selectedQueryIds.size !== queries.length
                 }
                 disableFocusRipple
                 disableTouchRipple
@@ -152,13 +150,17 @@ const QuerySelection = ({
           </ListItemButton>
         </ListItem>
         <Divider />
-        {queryIds.map((qid, idx) => (
+        {queries.map((query, idx) => (
           <QuerySelectionItem
             key={idx}
-            qid={qid}
-            checked={selectedQueryIds.has(qid)}
-            handleChange={() => handleSelectSingleQuery(qid)}
-            handleInactivateQuery={() => handleInactivateQuery(qid)}
+            query={query}
+            checked={selectedQueryIds.has(query.result_handler_identifier)}
+            handleChange={() =>
+              handleSelectSingleQuery(query.result_handler_identifier)
+            }
+            handleInactivateQuery={() =>
+              handleInactivateQuery(query.result_handler_identifier)
+            }
           />
         ))}
       </List>
@@ -230,24 +232,6 @@ const Watch = () => {
 
   const [atBottom, setAtBottom] = useState(true);
 
-  useEffect(() => {
-    // Get the current query IDs from the queries list
-    const currentQueryIds = new Set(
-      queries.map((q) => q.result_handler_identifier)
-    );
-
-    // Filter out the selected query IDs that are no longer in the currentQueryIds set
-    setSelectedQueryIds((prev) => {
-      const next = new Set(prev);
-      for (const qid of prev) {
-        if (!currentQueryIds.has(qid)) {
-          next.delete(qid);
-        }
-      }
-      return next;
-    });
-  }, [queries]);
-
   // Fetch queries at mount and refresh every {delay} ms
   useEffect(() => {
     const fetchQueries = async () => {
@@ -263,10 +247,24 @@ const Watch = () => {
     fetchQueries();
 
     // Refresh
-    const delay = 5000;
+    const delay = 500;
     const interval = setInterval(fetchQueries, delay);
     return () => clearInterval(interval);
   }, []);
+
+  // Remove queries that are no longer active
+  useEffect(() => {
+    setSelectedQueryIds((prev) => {
+      const next = new Set(prev);
+      for (const qid of prev) {
+        if (!queries.find((q) => q.result_handler_identifier === qid)) {
+          next.delete(qid);
+        }
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(queries)]);
 
   useEffect(() => {
     setQid2Websockets((prev) => {
@@ -305,7 +303,6 @@ const Watch = () => {
   }, [selectedQueryIds]);
 
   useEffect(() => {
-    console.log('Changing all WebSockets onmessage');
     if (eventInterval > 0) {
       // Buffered updates
       for (const [qid, ws] of Object.entries(qid2Websockets)) {
@@ -315,8 +312,11 @@ const Watch = () => {
       }
     } else {
       // Real-time updates. Flush buffer
-      const currentBuffer = dataBuffer.current;
+      let currentBuffer = dataBuffer.current;
       dataBuffer.current = [];
+      currentBuffer = currentBuffer.filter(
+        (item) => item.qid in qid2Websockets
+      );
       setData((prevData) => [...prevData, ...currentBuffer]);
       for (const [qid, ws] of Object.entries(qid2Websockets)) {
         ws.onmessage = (event) => {
@@ -328,24 +328,27 @@ const Watch = () => {
     }
   }, [eventInterval, qid2Websockets]);
 
+  // Enable interval if necessary
   useEffect(() => {
-    // Enable interval if necessary
     if (eventInterval === 0) return;
 
     console.log('Setting up buffered interval with', eventInterval, 'ms');
     const bufferedInterval = setInterval(() => {
-      const first = dataBuffer.current.shift();
-      if (first) {
-        setData((prevData) => {
-          return [...prevData, first];
-        });
+      while (dataBuffer.current.length > 0) {
+        const first = dataBuffer.current.shift();
+        if (first && selectedQueryIds.has(first.qid)) {
+          setData((prevData) => {
+            return [...prevData, first];
+          });
+          break;
+        }
       }
     }, eventInterval);
     return () => {
       console.log('Clearing buffered interval');
       clearInterval(bufferedInterval);
     };
-  }, [eventInterval]);
+  }, [eventInterval, selectedQueryIds]);
 
   useEffect(() => {
     return () => {
@@ -354,7 +357,7 @@ const Watch = () => {
         ws.close();
       }
     };
-  }, [qid2Websockets]);
+  }, []);
 
   const renderItem = (index, data) => {
     return (
@@ -394,7 +397,7 @@ const Watch = () => {
           <EventIntervalSelector setValue={setEventInterval} />
           <Divider />
           <QuerySelection
-            queryIds={queries.map((q) => q.result_handler_identifier)}
+            queries={queries}
             selectedQueryIds={selectedQueryIds}
             setSelectedQueryIds={setSelectedQueryIds}
           />
