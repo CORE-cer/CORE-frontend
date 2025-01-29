@@ -24,9 +24,9 @@ const Editor = React.forwardRef(({ query, ...props }, ref) => {
   }, [theme.palette.mode]);
 
   useEffect(() => {
-    if (editor && query) {
+    if (editor) {
       const model = editor.getModel();
-      model.setValue(query);
+      model.setValue(query || '');
     }
   }, [editor, query]);
 
@@ -36,6 +36,7 @@ const Editor = React.forwardRef(({ query, ...props }, ref) => {
         theme: theme.palette.mode === 'dark' ? 'ceql-dark' : 'ceql-light',
         language: 'ceql',
         automaticLayout: true,
+        scrollBeyondLastLine: false,
         minimap: { enabled: false },
         renderWhitespace: 'all',
         tabSize: 2,
@@ -50,7 +51,6 @@ const Editor = React.forwardRef(({ query, ...props }, ref) => {
       editor?.dispose();
       monaco.editor.getModels().forEach((model) => model.dispose());
     };
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

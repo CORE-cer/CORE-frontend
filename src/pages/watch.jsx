@@ -1,7 +1,6 @@
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
-  Button,
   Divider,
   List,
   Paper,
@@ -15,10 +14,13 @@ import {
   Fab,
   Fade,
   Tooltip,
+  IconButton,
 } from '@mui/material';
 import { useEffect, useState, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { Virtuoso } from 'react-virtuoso';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { enqueueSnackbar } from 'notistack';
 
 const MAX_COLORS = 16;
 const SIDE_PANEL_WIDTH = 200;
@@ -50,37 +52,34 @@ const QuerySelectionItem = ({
   handleInactivateQuery,
 }) => {
   return (
-    <>
-      <ListItem disablePadding>
-        <ListItemText
-          primary={qid}
-          sx={{ wordBreak: 'normal', textAlign: 'center' }}
-        />
-      </ListItem>
-      <ListItem disablePadding>
+    <ListItem
+      disablePadding
+      secondaryAction={
+        <Tooltip title={`Remove query ${qid}`} arrow placement="right">
+          <IconButton
+            size="small"
+            edge="end"
+            onClick={() => handleInactivateQuery(qid)}
+          >
+            <DeleteIcon fontSize="small" color="error" />
+          </IconButton>
+        </Tooltip>
+      }
+    >
+      <ListItemButton onClick={handleChange}>
         <ListItemIcon>
-          <ListItemButton onClick={handleChange}>
-            <Checkbox
-              color="text.primary"
-              checked={checked}
-              className={`color-${qid % MAX_COLORS}`}
-              disableFocusRipple
-              disableTouchRipple
-              sx={{ margin: 'auto' }}
-            />
-          </ListItemButton>
+          <Checkbox
+            color="text.primary"
+            checked={checked}
+            className={`color-${qid % MAX_COLORS}`}
+            disableFocusRipple
+            disableTouchRipple
+            sx={{ margin: 'auto' }}
+          />
         </ListItemIcon>
-        <Button
-          onClick={handleInactivateQuery}
-          variant="contained"
-          color="primary"
-          size="small"
-          sx={{ margin: 'auto' }}
-        >
-          Delete
-        </Button>
-      </ListItem>
-    </>
+        <ListItemText primary={qid} sx={{ wordBreak: 'break-all' }} />
+      </ListItemButton>
+    </ListItem>
   );
 };
 
@@ -179,7 +178,6 @@ const EventIntervalSelector = ({ setValue }) => {
       <Typography gutterBottom>{'Event Interval'}</Typography>
       <Slider
         onChangeCommitted={(_, value) => setValue(value)}
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
         step={500}
         marks
         valueLabelFormat={valueLabelFormat}
@@ -232,13 +230,32 @@ const Watch = () => {
 
   const [atBottom, setAtBottom] = useState(true);
 
+  useEffect(() => {
+    // Get the current query IDs from the queries list
+    const currentQueryIds = new Set(
+      queries.map((q) => q.result_handler_identifier)
+    );
+
+    // Filter out the selected query IDs that are no longer in the currentQueryIds set
+    setSelectedQueryIds((prev) => {
+      const next = new Set(prev);
+      for (const qid of prev) {
+        if (!currentQueryIds.has(qid)) {
+          next.delete(qid);
+        }
+      }
+      return next;
+    });
+  }, [queries]);
+
   // Fetch queries at mount and refresh every {delay} ms
   useEffect(() => {
     const fetchQueries = async () => {
       try {
         setQueries(await getQueries());
-      } catch (e) {
-        console.error('Error fetching queries:', e);
+      } catch (err) {
+        enqueueSnackbar(`Error fetching queries: ${err}`, { variant: 'error' });
+        console.error('Error fetching queries:', err);
       }
     };
 
@@ -246,7 +263,7 @@ const Watch = () => {
     fetchQueries();
 
     // Refresh
-    const delay = 1000;
+    const delay = 5000;
     const interval = setInterval(fetchQueries, delay);
     return () => clearInterval(interval);
   }, []);
@@ -337,90 +354,7 @@ const Watch = () => {
         ws.close();
       }
     };
-  }, []);
-
-  // useEffect(() => {
-  //   const websocketConnections = [];
-
-  //   if (eventInterval > 0) {
-  //     console.error('TODO');
-  //   } else {
-  //     console.log('MOUNT');
-  //     for (const qid of selectedQueryIds) {
-  //       const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
-  //       const ws = new WebSocket(baseUrl + '/' + qid);
-  //       websocketConnections.push(ws);
-  //       ws.onmessage = (event) => {
-  //         setData((prevData) => {
-  //           return [...prevData, { qid, data: event.data }];
-  //         });
-  //       };
-  //     }
-  //   }
-
-  //   return () => {
-  //     console.log('UNMOUNT');
-  //     websocketConnections.map((ws) => {
-  //       ws.close();
-  //     });
-  //   };
-
-  //   // const websocketConnections = [];
-  //   // if (eventInterval > 0) {
-  //   //   // Throttle events
-  //   //   dataBuffer.current = [];
-  //   //   for (const qid of selectedQueryIds) {
-  //   //     const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
-  //   //     const ws = new WebSocket(baseUrl + '/' + qid);
-  //   //     websocketConnections.push(ws);
-  //   //     for (const ws of websocketConnections) {
-  //   //       ws.onmessage = (event) => {
-  //   //         // Store data in buffer
-  //   //         dataBuffer.current.push({ qid, data: event.data });
-  //   //       };
-  //   //     }
-  //   //   }
-  //   //   const throttleInterval = setInterval(() => {
-  //   //     if (dataBuffer.current.length > 0) {
-  //   //       while (dataBuffer.current.length > 1) {
-  //   //         const first = dataBuffer.current.shift();
-  //   //         if (first.qid in selectedQueryIds) {
-  //   //           setData((prevData) => {
-  //   //             return [...prevData, first];
-  //   //           });
-  //   //           break;
-  //   //         }
-  //   //       }
-  //   //     }
-  //   //   }, eventInterval);
-  //   //   return () => {
-  //   //     clearInterval(throttleInterval);
-  //   //     dataBuffer.current = [];
-  //   //     for (const ws of websocketConnections) {
-  //   //       ws.close();
-  //   //     }
-  //   //   };
-  //   // } else {
-  //   //   // Real-time events
-  //   //   for (const qid of selectedQueryIds) {
-  //   //     const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
-  //   //     const ws = new WebSocket(baseUrl + '/' + qid);
-  //   //     websocketConnections.push(ws);
-  //   //     for (const ws of websocketConnections) {
-  //   //       ws.onmessage = (event) => {
-  //   //         setData((prevData) => {
-  //   //           return [...prevData, { qid, data: event.data }];
-  //   //         });
-  //   //       };
-  //   //     }
-  //   //   }
-  //   //   return () => {
-  //   //     for (const ws of websocketConnections) {
-  //   //       ws.close();
-  //   //     }
-  //   //   };
-  //   // }
-  // }, [selectedQueryIds, eventInterval]);
+  }, [qid2Websockets]);
 
   const renderItem = (index, data) => {
     return (
