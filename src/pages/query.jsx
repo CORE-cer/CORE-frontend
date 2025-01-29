@@ -9,22 +9,19 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
-  Tooltip,
   Fab,
-  IconButton,
   List,
   ListItem,
   ListItemButton,
   ListItemText,
   ListSubheader,
   TextField,
-  Typography,
 } from '@mui/material';
 import JsonView from '@uiw/react-json-view';
 import { darkTheme } from '@uiw/react-json-view/dark';
 import { lightTheme } from '@uiw/react-json-view/light';
 import { enqueueSnackbar } from 'notistack';
-import { useCallback, useRef, useState } from 'react';
+import { Fragment, useCallback, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import Editor from '../components/Editor';
 import examples from '../data/examples';
@@ -156,7 +153,6 @@ const Examples = ({ setExample }) => {
   return (
     <List
       dense
-      // disablePadding
       sx={{ flex: 1, overflow: 'auto' }}
       subheader={
         <ListSubheader sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -165,14 +161,14 @@ const Examples = ({ setExample }) => {
       }
     >
       {examples.map((example, idx) => (
-        <>
-          <ListItem key={idx} disableGutters>
+        <Fragment key={idx}>
+          <ListItem disableGutters>
             <ListItemButton onClick={() => setExample(example)}>
               <ListItemText primary={`${idx + 1}. ${example.title}`} />
             </ListItemButton>
           </ListItem>
           <Divider variant="middle" />
-        </>
+        </Fragment>
       ))}
     </List>
   );
@@ -206,16 +202,22 @@ const Query = () => {
       e.preventDefault();
       const currentQuery = editorRef.current.getEditor().getValue();
       const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
-      await fetch(baseUrl + '/add-query', {
+      const res = await fetch(baseUrl + '/add-query', {
         method: 'POST',
-        body: currentQuery,
+        body: {
+          query: currentQuery,
+          query_name: queryName,
+        },
       });
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
       enqueueSnackbar('Query added successfully', { variant: 'success' });
     } catch (err) {
+      console.error(err);
       enqueueSnackbar(`Error adding query: ${err.toString()}`, {
         variant: 'error',
       });
-      console.error(err);
     } finally {
       setLoading(false);
       handleModalClose();
