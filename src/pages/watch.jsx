@@ -443,7 +443,11 @@ const Watch = () => {
 
   const handleScrollToBottom = () => {
     if (!virtuoso.current) return;
-    virtuoso.current.scrollToIndex(data.length - 1);
+    virtuoso.current.scrollToIndex({
+      index: data.length - 1,
+      align: 'end',
+      behavior: 'auto',
+    });
   };
 
   return (
@@ -483,7 +487,7 @@ const Watch = () => {
             overscan={50}
             ref={virtuoso}
             alignToBottom
-            atBottomStateChange={setAtBottom}
+            atBottomStateChange={(isAtBottom) => setAtBottom(isAtBottom)}
             followOutput="auto" // Auto-scroll if the window is at the bottom
             atBottomThreshold={300}
             data={data}
