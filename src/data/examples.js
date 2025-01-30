@@ -6,17 +6,17 @@
   */
 const examples = [
   {
-    title: 'Show all Buy',
+    title: 'Show all Buy and Sell events',
     query: `SELECT *
 FROM TICKER
-WHERE Buy`,
+WHERE Buy OR Sell`,
   },
   {
-    title: 'Show all Sell of a symbol',
+    title: 'Show all Buy and Sell events of a symbol',
     query: `SELECT *
 FROM TICKER
-WHERE Sell
-FILTER Sell[product_id='BTC-USD']`,
+WHERE (Buy OR Sell) AS X
+FILTER X[product_id='LTC-USD']`,
   },
   {
     title:
