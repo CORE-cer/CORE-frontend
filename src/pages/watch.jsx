@@ -416,7 +416,7 @@ const Watch = () => {
             alignToBottom
             atBottomStateChange={setAtBottom}
             followOutput={(isAtBottom) => (isAtBottom ? 'auto' : false)} // Auto-scroll if the window is at the bottom
-            atBottomThreshold={10}
+            atBottomThreshold={300}
             data={data}
             itemContent={renderItem}
           />
