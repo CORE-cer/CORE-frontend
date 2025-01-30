@@ -79,8 +79,8 @@ const AddQueryDialog = ({
 };
 
 const SCHEMA = {
-  Ticker: {
-    buy: {
+  TICKER: {
+    Buy: {
       product_id: 'ETH-USD',
       open_24h: 1310.79,
       low_24h: 1280.52,
@@ -94,7 +94,7 @@ const SCHEMA = {
       best_ask: 1285.27,
       time: new Date('2022-10-19T23:28:22.061769Z'),
     },
-    sell: {
+    Sell: {
       product_id: 'ETH-USD',
       open_24h: 1310.79,
       low_24h: 1280.52,
@@ -133,7 +133,7 @@ const CustomJsonView = ({ schema }) => {
       />
       <JsonView.Date
         render={({ children, ...rest }, { type }) => {
-          if (type === 'type') return <span {...rest}>{'PRIMARY_TIME'}</span>;
+          if (type === 'type') return <span {...rest}>{'primary_time'}</span>;
           return <span {...rest}>{children}</span>;
         }}
       />
@@ -226,7 +226,7 @@ const Query = () => {
 
   return (
     <>
-      <Helmet title={`Query | CORE`} />
+      <Helmet title={`Query | CORE Beta`} />
       <AddQueryDialog
         loading={loading}
         open={modalOpen}

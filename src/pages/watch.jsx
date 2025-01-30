@@ -223,14 +223,13 @@ const Watch = () => {
   const [selectedQueryIds, setSelectedQueryIds] = useState(new Set());
   const [data, setData] = useState([]);
   const [eventInterval, setEventInterval] = useState(0);
+  const [atBottom, setAtBottom] = useState(false);
 
   const [qid2Websockets, setQid2Websockets] = useState({});
 
   const virtuoso = useRef(null);
 
   const dataBuffer = useRef([]);
-
-  const [atBottom, setAtBottom] = useState(true);
 
   // Fetch queries at mount and refresh every {delay} ms
   useEffect(() => {
@@ -377,12 +376,17 @@ const Watch = () => {
     );
   };
 
+  const handleScrollToBottom = () => {
+    if (!virtuoso.current) return;
+    virtuoso.current.scrollToIndex(data.length - 1);
+  };
+
   return (
     <>
-      <Helmet title={`Watch | CORE`} />
+      <Helmet title={`Watch | CORE Beta`} />
       <ScrollToLatest
         trigger={!atBottom}
-        scrollToBottom={() => virtuoso.current.scrollToIndex(data.length - 1)}
+        scrollToBottom={handleScrollToBottom}
       />
       <Box sx={{ display: 'flex', width: '100%', height: '100%' }}>
         <Box
@@ -415,7 +419,7 @@ const Watch = () => {
             ref={virtuoso}
             alignToBottom
             atBottomStateChange={setAtBottom}
-            followOutput={(isAtBottom) => (isAtBottom ? 'auto' : false)} // Auto-scroll if the window is at the bottom
+            followOutput="auto" // Auto-scroll if the window is at the bottom
             atBottomThreshold={300}
             data={data}
             itemContent={renderItem}

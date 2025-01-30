@@ -37,7 +37,7 @@ const Logo = () => {
           textDecoration: 'none',
         }}
       >
-        CORE
+        CORE Beta
       </Link>
     </Typography>
   );
