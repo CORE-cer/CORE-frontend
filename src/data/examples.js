@@ -31,11 +31,11 @@ WITHIN 5 SECONDS
   {
     title:
       'Three Buy events in BTC-USD where the transaction size was at least 0.01BTC in less than 10 seconds',
-    query: `SELECT b3
-FROM TICKER
+    query: `SELECT b3 FROM TICKER
 WHERE Buy; Buy; (Buy AS b3)
-FILTER Buy[product_id='BTC-USD' AND last_size >= 0.01]
-WITHIN 10 SECONDS
+FILTER Buy[product_id = 'BTC-USD' AND last_size >= 0.01]
+WITHIN 5 SECONDS
+LIMIT 1
 `,
   },
   {
