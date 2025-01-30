@@ -271,9 +271,14 @@ const Watch = () => {
           events.push(eventOutput);
         }
         outputComplexEvent['events'] = events;
-        outputComplexEvents.push(outputComplexEvent);
+
+        const triggerDate = new Date(outputComplexEvent['end'] / 1000000);
+
+        const outputString = `Event Triggered at time ${triggerDate.toISOString()} - ${JSON.stringify(outputComplexEvent)}`;
+
+        outputComplexEvents.push(outputString);
       }
-      return JSON.stringify(outputComplexEvents);
+      return outputComplexEvents.join('\n');
     },
     [streamsInfo]
   );
