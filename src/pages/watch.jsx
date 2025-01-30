@@ -241,6 +241,43 @@ const Watch = () => {
 
   const dataBuffer = useRef([]);
 
+  const formatComplexEvents = useCallback(
+    (complexEventsJson) => {
+      function getEventInfoFromEventId(eventId) {
+        for (let streamInfo of streamsInfo) {
+          for (let eventInfo of streamInfo['events_info']) {
+            if (eventInfo['id'] === eventId) {
+              return eventInfo;
+            }
+          }
+        }
+      }
+      let outputComplexEvents = [];
+      for (const complexEvent of complexEventsJson) {
+        let outputComplexEvent = {};
+        outputComplexEvent['start'] = complexEvent['start'];
+        outputComplexEvent['end'] = complexEvent['end'];
+        let events = [];
+        for (let event of complexEvent['eventss']) {
+          let eventOutput = {};
+          event = event['event'];
+          const eventInfo = getEventInfoFromEventId(event['event_type_id']);
+          eventOutput['event_type'] = eventInfo['name'];
+          for (let i = 0; i < eventInfo['attributes_info'].length; i++) {
+            const attributeInfo = eventInfo['attributes_info'][i];
+            const attributeValue = event['attributes'][i];
+            eventOutput[attributeInfo['name']] = attributeValue;
+          }
+          events.push(eventOutput);
+        }
+        outputComplexEvent['events'] = events;
+        outputComplexEvents.push(outputComplexEvent);
+      }
+      return JSON.stringify(outputComplexEvents);
+    },
+    [streamsInfo]
+  );
+
   // Fetch queries at mount and refresh every {delay} ms
   useEffect(() => {
     const fetchQueries = async () => {
