@@ -16,7 +16,7 @@ import {
   Tooltip,
   IconButton,
 } from '@mui/material';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { Virtuoso } from 'react-virtuoso';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -32,6 +32,15 @@ const getQueries = async () => {
   });
   const queries = await fetchRes.json();
   return queries.filter((query) => query.active);
+};
+
+const getStreamsInfo = async () => {
+  const baseUrl = import.meta.env.VITE_CORE_BACKEND_URL;
+  const fetchRes = await fetch(baseUrl + '/all-streams-info', {
+    method: 'GET',
+  });
+  const streamsInfo = await fetchRes.json();
+  return streamsInfo;
 };
 
 const inactivateQuery = async (qid) => {
@@ -220,6 +229,7 @@ const ScrollToLatest = ({ trigger, scrollToBottom }) => {
 
 const Watch = () => {
   const [queries, setQueries] = useState([]);
+  const [streamsInfo, setStreamsInfo] = useState([]);
   const [selectedQueryIds, setSelectedQueryIds] = useState(new Set());
   const [data, setData] = useState([]);
   const [eventInterval, setEventInterval] = useState(0);
@@ -232,6 +242,46 @@ const Watch = () => {
 
   const [atBottom, setAtBottom] = useState(true);
 
+  const formatComplexEvents = useCallback(
+    (complexEventsJson) => {
+      function getEventInfoFromEventId(eventId) {
+        for (let streamInfo of streamsInfo) {
+          for (let eventInfo of streamInfo['events_info']) {
+            console.log(eventInfo['id'] + ' ' + eventId);
+            if (eventInfo['id'] === eventId) {
+              return eventInfo;
+            }
+          }
+        }
+      }
+
+      let outputComplexEvents = [];
+      for (const complexEvent of complexEventsJson) {
+        let outputComplexEvent = {};
+        outputComplexEvent['start'] = complexEvent['start'];
+        outputComplexEvent['end'] = complexEvent['end'];
+        let events = [];
+        for (let event of complexEvent['eventss']) {
+          let eventOutput = {};
+          event = event['event'];
+          const eventInfo = getEventInfoFromEventId(event['event_type_id']);
+          eventOutput['event_type'] = eventInfo['name'];
+          for (let i = 0; i < eventInfo['attributes_info'].length; i++) {
+            const attributeInfo = eventInfo['attributes_info'][i];
+            const attributeValue = event['attributes'][i];
+            eventOutput[attributeInfo['name']] = attributeValue;
+          }
+          events.push(eventOutput);
+        }
+        outputComplexEvent['events'] = events;
+        outputComplexEvents.push(outputComplexEvent);
+      }
+
+      return JSON.stringify(outputComplexEvents);
+    },
+    [streamsInfo]
+  );
+
   // Fetch queries at mount and refresh every {delay} ms
   useEffect(() => {
     const fetchQueries = async () => {
@@ -242,13 +292,27 @@ const Watch = () => {
         console.error('Error fetching queries:', err);
       }
     };
+    const fetchStreamsInfo = async () => {
+      try {
+        setStreamsInfo(await getStreamsInfo());
+      } catch (err) {
+        enqueueSnackbar(`Error fetching streams info: ${err}`, {
+          variant: 'error',
+        });
+        console.error('Error fetching streams info:', err);
+      }
+    };
 
     // First fetch
     fetchQueries();
+    fetchStreamsInfo();
 
     // Refresh
     const delay = 500;
-    const interval = setInterval(fetchQueries, delay);
+    const interval = setInterval(() => {
+      fetchQueries();
+      fetchStreamsInfo();
+    }, delay);
     return () => clearInterval(interval);
   }, []);
 
@@ -307,7 +371,9 @@ const Watch = () => {
       // Buffered updates
       for (const [qid, ws] of Object.entries(qid2Websockets)) {
         ws.onmessage = (event) => {
-          dataBuffer.current.push({ qid, data: event.data });
+          const eventJson = JSON.parse(event.data);
+          const transformedEvent = formatComplexEvents(eventJson);
+          dataBuffer.current.push({ qid, data: transformedEvent });
         };
       }
     } else {
@@ -321,12 +387,14 @@ const Watch = () => {
       for (const [qid, ws] of Object.entries(qid2Websockets)) {
         ws.onmessage = (event) => {
           setData((prevData) => {
-            return [...prevData, { qid, data: event.data }];
+            const eventJson = JSON.parse(event.data);
+            const transformedEvent = formatComplexEvents(eventJson);
+            return [...prevData, { qid, data: transformedEvent }];
           });
         };
       }
     }
-  }, [eventInterval, qid2Websockets]);
+  }, [eventInterval, qid2Websockets, formatComplexEvents]);
 
   // Enable interval if necessary
   useEffect(() => {
