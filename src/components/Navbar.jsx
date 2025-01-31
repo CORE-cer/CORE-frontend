@@ -135,7 +135,6 @@ export default function Navbar({ children }) {
         <List dense>
           <DrawerListItem text="Query" href="/" />
           <DrawerListItem text="Watch" href="/watch" />
-          <DrawerListItem text="About" href="/about" />
         </List>
       </Drawer>
       <Main permanentDrawer={!isBelowMd}>{children}</Main>
