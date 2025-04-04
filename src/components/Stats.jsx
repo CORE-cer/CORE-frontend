@@ -18,8 +18,8 @@ function QueryStat({ qid, stat }) {
           height: 16,
           marginX: -1,
           marginY: -2,
-          borderTopLeftRadius: 2,
-          borderTopRightRadius: 2,
+          borderTopLeftRadius: 4,
+          borderTopRightRadius: 4,
           mb: 1,
         }}
       ></Box>
@@ -34,8 +34,6 @@ function QueryStat({ qid, stat }) {
 }
 
 export default function Stats({ stats }) {
-  const [agg, setAgg] = useState({ numEvents: 0 });
-
   return (
     <Grid container sx={{ flexGrow: 1, p: 1 }} spacing={2}>
       <Grid size={12}>
