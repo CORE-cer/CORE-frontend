@@ -21,8 +21,11 @@ import { Helmet } from 'react-helmet';
 import { Virtuoso } from 'react-virtuoso';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { enqueueSnackbar } from 'notistack';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Stats from '../components/Stats';
 
-const MAX_COLORS = 16;
+export const MAX_COLORS = 16;
 const SIDE_PANEL_WIDTH = 200;
 
 const getQueries = async () => {
@@ -235,6 +238,10 @@ const Watch = () => {
   const [eventInterval, setEventInterval] = useState(0);
   const [atBottom, setAtBottom] = useState(false);
 
+  const [stats, setStats] = useState({});
+
+  const [viewMode, setViewMode] = useState('list');
+
   const [qid2Websockets, setQid2Websockets] = useState({});
 
   const virtuoso = useRef(null);
@@ -331,6 +338,7 @@ const Watch = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(queries)]);
 
+  // handle opening/closing ws connections
   useEffect(() => {
     setQid2Websockets((prev) => {
       const next = { ...prev };
@@ -355,9 +363,17 @@ const Watch = () => {
         next[qid] = ws;
         ws.onopen = () => {
           console.log('Connected to qid', qid);
+          setStats((prev) => {
+            prev[qid] = { numEvents: 0 };
+            return prev;
+          });
         };
         ws.onclose = () => {
           console.log('Disconnected from qid', qid);
+          setStats((prev) => {
+            delete prev[qid];
+            return prev;
+          });
         };
         ws.onerror = () => {
           console.log('Error on qid', qid);
@@ -367,11 +383,18 @@ const Watch = () => {
     });
   }, [selectedQueryIds]);
 
+  // onmessage handlers for queries
   useEffect(() => {
     if (eventInterval > 0) {
       // Buffered updates
       for (const [qid, ws] of Object.entries(qid2Websockets)) {
         ws.onmessage = (event) => {
+          setStats((prev) => {
+            if (prev[qid]) {
+              ++prev[qid].numEvents;
+            }
+            return prev;
+          });
           const eventJson = JSON.parse(event.data);
           const transformedEvent = formatComplexEvents(eventJson);
           dataBuffer.current.push({ qid, data: transformedEvent });
@@ -387,6 +410,12 @@ const Watch = () => {
       setData((prevData) => [...prevData, ...currentBuffer]);
       for (const [qid, ws] of Object.entries(qid2Websockets)) {
         ws.onmessage = (event) => {
+          setStats((prev) => {
+            if (prev[qid]) {
+              ++prev[qid].numEvents;
+            }
+            return prev;
+          });
           setData((prevData) => {
             const eventJson = JSON.parse(event.data);
             const transformedEvent = formatComplexEvents(eventJson);
@@ -480,24 +509,65 @@ const Watch = () => {
             setSelectedQueryIds={setSelectedQueryIds}
           />
         </Box>
+
         <Box
           sx={{
             flex: 1,
-            width: '100%',
-            height: '100%',
             overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <Virtuoso
-            overscan={50}
-            ref={virtuoso}
-            alignToBottom
-            atBottomStateChange={(isAtBottom) => setAtBottom(isAtBottom)}
-            followOutput="auto" // Auto-scroll if the window is at the bottom
-            atBottomThreshold={300}
-            data={data}
-            itemContent={renderItem}
-          />
+          {/* <Box
+            sx={{
+              position: 'fixed',
+              width: '100%',
+              background: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+            }}
+          >
+          <Divider />
+          </Box> */}
+          <Box
+            sx={{
+              background: 'background.paper',
+              flex: 0,
+              py: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ToggleButtonGroup
+              color="primary"
+              exclusive
+              value={viewMode}
+              onChange={(e, newValue) => setViewMode(newValue)}
+            >
+              <ToggleButton value="list">List</ToggleButton>
+              <ToggleButton value="stats">Stats</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+          <Divider />
+          <Box sx={{ flex: 1 }}>
+            {viewMode === 'list' ? (
+              <Virtuoso
+                overscan={50}
+                ref={virtuoso}
+                alignToBottom
+                atBottomStateChange={(isAtBottom) => setAtBottom(isAtBottom)}
+                followOutput="auto" // Auto-scroll if the window is at the bottom
+                atBottomThreshold={300}
+                data={data}
+                itemContent={renderItem}
+              />
+            ) : (
+              <Stats stats={stats} />
+            )}
+          </Box>
         </Box>
       </Box>
     </>
