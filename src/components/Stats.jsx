@@ -1,12 +1,4 @@
-import {
-  Box,
-  Card,
-  Divider,
-  Grid2 as Grid,
-  Paper,
-  Typography,
-} from '@mui/material';
-import { useState } from 'react';
+import { Box, Divider, Grid2 as Grid, Paper, Typography } from '@mui/material';
 import { MAX_COLORS } from '../pages/watch';
 
 function QueryStat({ qid, stat }) {

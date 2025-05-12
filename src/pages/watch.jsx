@@ -24,6 +24,7 @@ import { enqueueSnackbar } from 'notistack';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Stats from '../components/Stats';
+import Timeline from '../components/Timeline';
 
 export const MAX_COLORS = 16;
 const SIDE_PANEL_WIDTH = 200;
@@ -312,16 +313,16 @@ const Watch = () => {
     };
 
     // First fetch
-    fetchQueries();
-    fetchStreamsInfo();
+    // fetchQueries();
+    // fetchStreamsInfo();
 
-    // Refresh
-    const delay = 500;
-    const interval = setInterval(() => {
-      fetchQueries();
-      fetchStreamsInfo();
-    }, delay);
-    return () => clearInterval(interval);
+    // Fetch with some delay afterwards
+    const delay = 1000;
+    // const interval = setInterval(() => {
+    //   fetchQueries();
+    //   fetchStreamsInfo();
+    // }, delay);
+    // return () => clearInterval(interval);
   }, []);
 
   // Remove queries that are no longer active
@@ -549,6 +550,7 @@ const Watch = () => {
             >
               <ToggleButton value="list">List</ToggleButton>
               <ToggleButton value="stats">Stats</ToggleButton>
+              <ToggleButton value="timeline">Timeline</ToggleButton>
             </ToggleButtonGroup>
           </Box>
           <Divider />
@@ -564,8 +566,10 @@ const Watch = () => {
                 data={data}
                 itemContent={renderItem}
               />
-            ) : (
+            ) : viewMode === 'stats' ? (
               <Stats stats={stats} />
+            ) : (
+              <Timeline></Timeline>
             )}
           </Box>
         </Box>
