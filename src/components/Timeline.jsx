@@ -6,41 +6,82 @@ import {
   PointElement,
   CategoryScale,
   LinearScale,
+  TimeScale,
   Legend,
 } from 'chart.js';
 import { useTheme } from '@emotion/react';
 import { Box } from '@mui/material';
+import { COLORS, MAX_COLORS } from '../colors';
+import 'chartjs-adapter-date-fns';
 
-ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Legend);
+ChartJS.register(
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  TimeScale,
+  Legend
+);
 
-const WINDOW_MS = 5000;
-const UPDATE_DELAY_MS = 1000;
+const WINDOW_MS = 10000;
 
-const createDataset = ({ label, color }) => {
+const createDataset = ({ label, color, qid }) => {
   return {
     label,
     data: [],
     borderColor: color,
     backgroundColor: color,
     tension: 0.4,
+    qid,
   };
 };
 
-export default function Timeline() {
+export default function Timeline({ stats }) {
   const theme = useTheme();
 
   const [chartData, setChartData] = useState({
-    labels: [],
-    datasets: [
-      createDataset({ label: 'q1', color: 'cyan' }),
-      createDataset({ label: 'q2', color: 'magenta' }),
-      createDataset({ label: 'q3', color: 'yellow' }),
-    ],
+    // labels: [],
+    datasets: [],
   });
 
-  const options = useMemo(() => {
-    const latestTimestamp = chartData.labels[chartData.labels.length - 1];
+  const [now, setNow] = useState(new Date());
 
+  useEffect(() => {
+    const nextNow = new Date();
+
+    setChartData((prev) => {
+      const nextDatasets = [];
+      for (const qid in stats) {
+        const found = prev.datasets.find((d) => d.qid === qid);
+        if (found) {
+          nextDatasets.push(found);
+        } else {
+          nextDatasets.push(
+            createDataset({
+              label: `Query ${qid}`,
+              qid,
+              color: COLORS[qid % MAX_COLORS],
+            })
+          );
+        }
+      }
+
+      for (let i = 0; i < nextDatasets.length; ++i) {
+        nextDatasets[i].data = [
+          ...nextDatasets[i].data,
+          { x: nextNow, y: stats[nextDatasets[i].qid].eventsPerSecond },
+        ];
+      }
+
+      return {
+        datasets: nextDatasets,
+      };
+    });
+
+    setNow(nextNow);
+  }, [stats]);
+
+  const options = useMemo(() => {
     return {
       color: theme.palette.text.primary,
       responsive: true,
@@ -51,7 +92,10 @@ export default function Timeline() {
       },
       scales: {
         x: {
-          type: 'linear',
+          type: 'time',
+          time: {
+            unit: 'millisecond',
+          },
           title: {
             display: true,
             text: 'Timestamp',
@@ -60,8 +104,8 @@ export default function Timeline() {
           ticks: {
             color: theme.palette.text.secondary,
           },
-          min: latestTimestamp - WINDOW_MS,
-          max: latestTimestamp,
+          min: new Date(now - WINDOW_MS),
+          max: now,
           grid: {
             color: theme.palette.divider,
           },
@@ -70,7 +114,7 @@ export default function Timeline() {
           min: 0,
           title: {
             display: true,
-            text: 'Number of events',
+            text: 'Events per second',
             color: theme.palette.text.primary,
           },
           ticks: {
@@ -82,34 +126,7 @@ export default function Timeline() {
         },
       },
     };
-  }, [chartData.labels, theme]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-
-      setChartData((prev) => {
-        const newLabels = [...prev.labels, now];
-        const newDatasets = prev.datasets.map((ds) => ({
-          ...ds,
-          data: [...ds.data, Math.random() * 100],
-        }));
-
-        return {
-          labels: newLabels,
-          datasets: newDatasets,
-        };
-      });
-    }, UPDATE_DELAY_MS);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {}, UPDATE_DELAY_MS);
-
-    return () => clearInterval(interval);
-  });
+  }, [now, theme]);
 
   return (
     <Box sx={{ flex: 1, height: '99.9%', position: 'relative' }}>

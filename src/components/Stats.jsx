@@ -1,5 +1,5 @@
 import { Box, Divider, Grid2 as Grid, Paper, Typography } from '@mui/material';
-import { MAX_COLORS } from '../pages/watch';
+import { MAX_COLORS } from '../colors';
 
 function QueryStat({ qid, stat }) {
   return (
@@ -20,6 +20,10 @@ function QueryStat({ qid, stat }) {
       <Box sx={{ py: 1 }}>
         <Typography variant="h4">{stat.numEvents}</Typography>
         <Typography variant="body1">{'Number of events'}</Typography>
+      </Box>
+      <Box sx={{ py: 1 }}>
+        <Typography variant="h4">{stat.eventsPerSecond}</Typography>
+        <Typography variant="body1">{'Events per second'}</Typography>
       </Box>
     </Paper>
   );

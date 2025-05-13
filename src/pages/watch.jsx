@@ -25,8 +25,8 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Stats from '../components/Stats';
 import Timeline from '../components/Timeline';
+import { MAX_COLORS } from '../colors';
 
-export const MAX_COLORS = 16;
 const SIDE_PANEL_WIDTH = 200;
 
 const getQueries = async () => {
@@ -239,6 +239,7 @@ const Watch = () => {
   const [eventInterval, setEventInterval] = useState(0);
   const [atBottom, setAtBottom] = useState(false);
 
+  const eventsPerSecond = useRef({});
   const [stats, setStats] = useState({});
 
   const [viewMode, setViewMode] = useState('list');
@@ -313,16 +314,15 @@ const Watch = () => {
     };
 
     // First fetch
-    // fetchQueries();
-    // fetchStreamsInfo();
+    fetchQueries();
+    fetchStreamsInfo();
 
     // Fetch with some delay afterwards
-    const delay = 1000;
-    // const interval = setInterval(() => {
-    //   fetchQueries();
-    //   fetchStreamsInfo();
-    // }, delay);
-    // return () => clearInterval(interval);
+    const interval = setInterval(() => {
+      fetchQueries();
+      fetchStreamsInfo();
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // Remove queries that are no longer active
@@ -364,16 +364,20 @@ const Watch = () => {
         next[qid] = ws;
         ws.onopen = () => {
           console.log('Connected to qid', qid);
+          eventsPerSecond.current[qid] = 0;
           setStats((prev) => {
-            prev[qid] = { numEvents: 0 };
-            return prev;
+            const next = { ...prev };
+            next[qid] = { numEvents: 0, eventsPerSecond: 0 };
+            return next;
           });
         };
         ws.onclose = () => {
           console.log('Disconnected from qid', qid);
           setStats((prev) => {
-            delete prev[qid];
-            return prev;
+            delete eventsPerSecond.current[qid];
+            const next = { ...prev };
+            delete next[qid];
+            return next;
           });
         };
         ws.onerror = () => {
@@ -390,12 +394,6 @@ const Watch = () => {
       // Buffered updates
       for (const [qid, ws] of Object.entries(qid2Websockets)) {
         ws.onmessage = (event) => {
-          setStats((prev) => {
-            if (prev[qid]) {
-              ++prev[qid].numEvents;
-            }
-            return prev;
-          });
           const eventJson = JSON.parse(event.data);
           const transformedEvent = formatComplexEvents(eventJson);
           dataBuffer.current.push({ qid, data: transformedEvent });
@@ -411,12 +409,7 @@ const Watch = () => {
       setData((prevData) => [...prevData, ...currentBuffer]);
       for (const [qid, ws] of Object.entries(qid2Websockets)) {
         ws.onmessage = (event) => {
-          setStats((prev) => {
-            if (prev[qid]) {
-              ++prev[qid].numEvents;
-            }
-            return prev;
-          });
+          ++eventsPerSecond.current[qid];
           setData((prevData) => {
             const eventJson = JSON.parse(event.data);
             const transformedEvent = formatComplexEvents(eventJson);
@@ -436,6 +429,7 @@ const Watch = () => {
       while (dataBuffer.current.length > 0) {
         const first = dataBuffer.current.shift();
         if (first && selectedQueryIds.has(first.qid)) {
+          ++eventsPerSecond.current[first.qid];
           setData((prevData) => {
             return [...prevData, first];
           });
@@ -456,6 +450,21 @@ const Watch = () => {
         ws.close();
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStats((prev) => {
+        const next = { ...prev };
+        for (const qid in next) {
+          next[qid].eventsPerSecond = eventsPerSecond.current[qid];
+          next[qid].numEvents += next[qid].eventsPerSecond;
+          eventsPerSecond.current[qid] = 0;
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const renderItem = (index, data) => {
@@ -569,7 +578,7 @@ const Watch = () => {
             ) : viewMode === 'stats' ? (
               <Stats stats={stats} />
             ) : (
-              <Timeline></Timeline>
+              <Timeline stats={stats} />
             )}
           </Box>
         </Box>
