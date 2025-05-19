@@ -24,7 +24,6 @@ import { enqueueSnackbar } from 'notistack';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Stats from '../components/Stats';
-import Timeline from '../components/Timeline';
 import { MAX_COLORS } from '../colors';
 
 const SIDE_PANEL_WIDTH = 200;
@@ -181,7 +180,7 @@ const QuerySelection = ({ queries, selectedQueryIds, setSelectedQueryIds }) => {
   );
 };
 
-const EventIntervalSelector = ({ setValue }) => {
+const EventIntervalSelector = ({ disabled, setValue }) => {
   const valueLabelFormat = (value) => {
     if (value === 0) return 'Unlimited (Real-time)';
     if (value > 1000) return `${value / 1000}s`;
@@ -192,6 +191,7 @@ const EventIntervalSelector = ({ setValue }) => {
     <Box sx={{ width: 'inherit', px: 2, py: 2 }}>
       <Typography gutterBottom>{'Event Interval'}</Typography>
       <Slider
+        disabled={disabled}
         onChangeCommitted={(_, value) => setValue(value)}
         step={500}
         marks
@@ -239,8 +239,8 @@ const Watch = () => {
   const [eventInterval, setEventInterval] = useState(0);
   const [atBottom, setAtBottom] = useState(false);
 
-  const eventsPerSecond = useRef({});
-  const [stats, setStats] = useState({});
+  const currentQid2StatRef = useRef({});
+  const [qid2StatsPerSecond, setQid2StatsPerSecond] = useState({});
 
   const [viewMode, setViewMode] = useState('list');
 
@@ -364,17 +364,20 @@ const Watch = () => {
         next[qid] = ws;
         ws.onopen = () => {
           console.log('Connected to qid', qid);
-          eventsPerSecond.current[qid] = 0;
-          setStats((prev) => {
+          currentQid2StatRef.current[qid] = {
+            numHits: 0,
+            numComplexEvents: 0,
+          };
+          setQid2StatsPerSecond((prev) => {
             const next = { ...prev };
-            next[qid] = { numEvents: 0, eventsPerSecond: 0 };
+            next[qid] = [];
             return next;
           });
         };
         ws.onclose = () => {
           console.log('Disconnected from qid', qid);
-          setStats((prev) => {
-            delete eventsPerSecond.current[qid];
+          delete currentQid2StatRef.current[qid];
+          setQid2StatsPerSecond((prev) => {
             const next = { ...prev };
             delete next[qid];
             return next;
@@ -386,7 +389,7 @@ const Watch = () => {
       }
       return next;
     });
-  }, [selectedQueryIds]);
+  }, [currentQid2StatRef, selectedQueryIds]);
 
   // onmessage handlers for queries
   useEffect(() => {
@@ -396,6 +399,10 @@ const Watch = () => {
         ws.onmessage = (event) => {
           const eventJson = JSON.parse(event.data);
           const transformedEvent = formatComplexEvents(eventJson);
+
+          currentQid2StatRef.current[qid].numHits += 1;
+          currentQid2StatRef.current[qid].numComplexEvents += 10; // TODO: CHANGE 10 by correct number
+
           dataBuffer.current.push({ qid, data: transformedEvent });
         };
       }
@@ -409,16 +416,19 @@ const Watch = () => {
       setData((prevData) => [...prevData, ...currentBuffer]);
       for (const [qid, ws] of Object.entries(qid2Websockets)) {
         ws.onmessage = (event) => {
-          ++eventsPerSecond.current[qid];
           setData((prevData) => {
             const eventJson = JSON.parse(event.data);
             const transformedEvent = formatComplexEvents(eventJson);
+
+            currentQid2StatRef.current[qid].numHits += 1;
+            currentQid2StatRef.current[qid].numComplexEvents += 10; // TODO: CHANGE 10 by correct number
+
             return [...prevData, { qid, data: transformedEvent }];
           });
         };
       }
     }
-  }, [eventInterval, qid2Websockets, formatComplexEvents]);
+  }, [eventInterval, qid2Websockets, formatComplexEvents, currentQid2StatRef]);
 
   // Enable interval if necessary
   useEffect(() => {
@@ -429,7 +439,6 @@ const Watch = () => {
       while (dataBuffer.current.length > 0) {
         const first = dataBuffer.current.shift();
         if (first && selectedQueryIds.has(first.qid)) {
-          ++eventsPerSecond.current[first.qid];
           setData((prevData) => {
             return [...prevData, first];
           });
@@ -454,12 +463,16 @@ const Watch = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setStats((prev) => {
+      if (currentQid2StatRef.current.length === 0) {
+        return;
+      }
+
+      setQid2StatsPerSecond((prev) => {
         const next = { ...prev };
         for (const qid in next) {
-          next[qid].eventsPerSecond = eventsPerSecond.current[qid];
-          next[qid].numEvents += next[qid].eventsPerSecond;
-          eventsPerSecond.current[qid] = 0;
+          next[qid].push({ ...currentQid2StatRef.current[qid] });
+          currentQid2StatRef.current[qid].numHits = 0;
+          currentQid2StatRef.current[qid].numComplexEvents = 0;
         }
         return next;
       });
@@ -511,7 +524,10 @@ const Watch = () => {
             borderColor: 'divider',
           }}
         >
-          <EventIntervalSelector setValue={setEventInterval} />
+          <EventIntervalSelector
+            disabled={viewMode !== 'list'}
+            setValue={setEventInterval}
+          />
           <Divider />
           <QuerySelection
             queries={queries}
@@ -528,19 +544,6 @@ const Watch = () => {
             flexDirection: 'column',
           }}
         >
-          {/* <Box
-            sx={{
-              position: 'fixed',
-              width: '100%',
-              background: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1000,
-            }}
-          >
-          <Divider />
-          </Box> */}
           <Box
             sx={{
               background: 'background.paper',
@@ -559,7 +562,6 @@ const Watch = () => {
             >
               <ToggleButton value="list">List</ToggleButton>
               <ToggleButton value="stats">Stats</ToggleButton>
-              <ToggleButton value="timeline">Timeline</ToggleButton>
             </ToggleButtonGroup>
           </Box>
           <Divider />
@@ -576,10 +578,11 @@ const Watch = () => {
                 itemContent={renderItem}
               />
             ) : viewMode === 'stats' ? (
-              <Stats stats={stats} />
-            ) : (
-              <Timeline stats={stats} />
-            )}
+              <Stats
+                qid2StatsPerSecond={qid2StatsPerSecond}
+                queries={queries}
+              />
+            ) : null}
           </Box>
         </Box>
       </Box>
