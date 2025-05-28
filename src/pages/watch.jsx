@@ -1,30 +1,25 @@
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Box,
+  Checkbox,
   Divider,
+  IconButton,
   List,
-  Paper,
   ListItem,
   ListItemButton,
-  ListItemText,
-  Checkbox,
   ListItemIcon,
-  Slider,
-  Typography,
-  Fab,
-  Fade,
+  ListItemText,
   Tooltip,
-  IconButton,
 } from '@mui/material';
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { Helmet } from 'react-helmet';
-import { Virtuoso } from 'react-virtuoso';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { enqueueSnackbar } from 'notistack';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Stats from '../components/Stats';
+import { enqueueSnackbar } from 'notistack';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Helmet } from 'react-helmet';
 import { MAX_COLORS } from '../colors';
+import HitList from '../components/HitList';
+import Stats from '../components/Stats';
+import Charts from '../components/Charts';
 
 const SIDE_PANEL_WIDTH = 200;
 
@@ -180,73 +175,19 @@ const QuerySelection = ({ queries, selectedQueryIds, setSelectedQueryIds }) => {
   );
 };
 
-const EventIntervalSelector = ({ disabled, setValue }) => {
-  const valueLabelFormat = (value) => {
-    if (value === 0) return 'Unlimited (Real-time)';
-    if (value > 1000) return `${value / 1000}s`;
-    return `${value}ms`;
-  };
-
-  return (
-    <Box sx={{ width: 'inherit', px: 2, py: 2 }}>
-      <Typography gutterBottom>{'Event Interval'}</Typography>
-      <Slider
-        disabled={disabled}
-        onChangeCommitted={(_, value) => setValue(value)}
-        step={500}
-        marks
-        valueLabelFormat={valueLabelFormat}
-        valueLabelDisplay="auto"
-        min={0}
-        max={5000}
-      />
-    </Box>
-  );
-};
-
-const ScrollToLatest = ({ trigger, scrollToBottom }) => {
-  // https://mui.com/material-ui/react-app-bar/
-  return (
-    <Fade in={trigger}>
-      <Tooltip title="Go to bottom" arrow>
-        <Fab
-          size="small"
-          onClick={scrollToBottom}
-          variant="circular"
-          color="default"
-          sx={{
-            opacity: '0.5 !important',
-            position: 'fixed',
-            bottom: 32,
-            right: 32,
-            '&:hover': {
-              opacity: '1 !important',
-            },
-          }}
-        >
-          <KeyboardArrowDownIcon />
-        </Fab>
-      </Tooltip>
-    </Fade>
-  );
-};
-
 const Watch = () => {
   const [queries, setQueries] = useState([]);
   const [streamsInfo, setStreamsInfo] = useState([]);
   const [selectedQueryIds, setSelectedQueryIds] = useState(new Set());
   const [data, setData] = useState([]);
   const [eventInterval, setEventInterval] = useState(0);
-  const [atBottom, setAtBottom] = useState(false);
 
-  const currentQid2StatRef = useRef({});
-  const [qid2StatsPerSecond, setQid2StatsPerSecond] = useState({});
+  const currentQid2HitRef = useRef({});
+  const [qid2Stats, setQid2Stats] = useState({});
 
   const [viewMode, setViewMode] = useState('list');
 
   const [qid2Websockets, setQid2Websockets] = useState({});
-
-  const virtuoso = useRef(null);
 
   const dataBuffer = useRef([]);
 
@@ -364,22 +305,37 @@ const Watch = () => {
         next[qid] = ws;
         ws.onopen = () => {
           console.log('Connected to qid', qid);
-          currentQid2StatRef.current[qid] = {
+          currentQid2HitRef.current[qid] = {
             numHits: 0,
             numComplexEvents: 0,
           };
-          setQid2StatsPerSecond((prev) => {
+          setQid2Stats((prev) => {
             const next = { ...prev };
-            next[qid] = [];
+            next[qid] = {
+              perSec: [],
+              hitStats: {
+                max: 0,
+                total: 0,
+              },
+              complexEventStats: {
+                max: 0,
+                total: 0,
+              },
+            };
             return next;
           });
         };
         ws.onclose = () => {
           console.log('Disconnected from qid', qid);
-          delete currentQid2StatRef.current[qid];
-          setQid2StatsPerSecond((prev) => {
+          delete currentQid2HitRef.current[qid];
+          setQid2Stats((prev) => {
             const next = { ...prev };
             delete next[qid];
+            return next;
+          });
+          setSelectedQueryIds((prev) => {
+            const next = new Set(prev);
+            next.delete(qid);
             return next;
           });
         };
@@ -389,7 +345,7 @@ const Watch = () => {
       }
       return next;
     });
-  }, [currentQid2StatRef, selectedQueryIds]);
+  }, [currentQid2HitRef, selectedQueryIds]);
 
   // onmessage handlers for queries
   useEffect(() => {
@@ -400,8 +356,8 @@ const Watch = () => {
           const eventJson = JSON.parse(event.data);
           const transformedEvent = formatComplexEvents(eventJson);
 
-          currentQid2StatRef.current[qid].numHits += 1;
-          currentQid2StatRef.current[qid].numComplexEvents += 10; // TODO: CHANGE 10 by correct number
+          currentQid2HitRef.current[qid].numHits += 1;
+          currentQid2HitRef.current[qid].numComplexEvents += 99; // TODO: calcualte
 
           dataBuffer.current.push({ qid, data: transformedEvent });
         };
@@ -420,15 +376,15 @@ const Watch = () => {
             const eventJson = JSON.parse(event.data);
             const transformedEvent = formatComplexEvents(eventJson);
 
-            currentQid2StatRef.current[qid].numHits += 1;
-            currentQid2StatRef.current[qid].numComplexEvents += 10; // TODO: CHANGE 10 by correct number
+            currentQid2HitRef.current[qid].numHits += 1;
+            currentQid2HitRef.current[qid].numComplexEvents += 99; // TODO: calcualte
 
             return [...prevData, { qid, data: transformedEvent }];
           });
         };
       }
     }
-  }, [eventInterval, qid2Websockets, formatComplexEvents, currentQid2StatRef]);
+  }, [eventInterval, qid2Websockets, formatComplexEvents, currentQid2HitRef]);
 
   // Enable interval if necessary
   useEffect(() => {
@@ -463,57 +419,50 @@ const Watch = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (currentQid2StatRef.current.length === 0) {
+      if (currentQid2HitRef.current.length === 0) {
         return;
       }
 
-      setQid2StatsPerSecond((prev) => {
+      setQid2Stats((prev) => {
         const next = { ...prev };
         for (const qid in next) {
-          next[qid].push({ ...currentQid2StatRef.current[qid] });
-          currentQid2StatRef.current[qid].numHits = 0;
-          currentQid2StatRef.current[qid].numComplexEvents = 0;
+          const curr = next[qid];
+          curr.perSec.push({
+            ...currentQid2HitRef.current[qid],
+            time: Date.now(),
+          });
+
+          // increase total
+          curr.hitStats.total += currentQid2HitRef.current[qid].numHits;
+          curr.complexEventStats.total +=
+            currentQid2HitRef.current[qid].numComplexEvents;
+
+          // update max
+          curr.hitStats.max = Math.max(
+            curr.hitStats.max,
+            currentQid2HitRef.current[qid].numHits
+          );
+          curr.complexEventStats.max = Math.max(
+            curr.complexEventStats.max,
+            currentQid2HitRef.current[qid].numComplexEvents
+          );
+
+          // reset current
+          currentQid2HitRef.current[qid] = {
+            numHits: 0,
+            numComplexEvents: 0,
+          };
         }
         return next;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
-
-  const renderItem = (index, data) => {
-    return (
-      <Box sx={{ px: 1, py: 0.5 }}>
-        <Paper
-          className={`color-${data.qid % MAX_COLORS}`}
-          sx={{
-            p: 0.5,
-            fontFamily: 'Consolas, "Courier New", monospace',
-            fontSize: 12,
-            wordBreak: 'break-all',
-          }}
-        >
-          {data.data}
-        </Paper>
-      </Box>
-    );
-  };
-
-  const handleScrollToBottom = () => {
-    if (!virtuoso.current) return;
-    virtuoso.current.scrollToIndex({
-      index: data.length - 1,
-      align: 'end',
-      behavior: 'auto',
-    });
-  };
+  }, [currentQid2HitRef]);
 
   return (
     <>
       <Helmet title={`Watch | CORE Beta`} />
-      <ScrollToLatest
-        trigger={!atBottom}
-        scrollToBottom={handleScrollToBottom}
-      />
+
       <Box sx={{ display: 'flex', width: '100%', height: '100%' }}>
         <Box
           sx={{
@@ -524,11 +473,6 @@ const Watch = () => {
             borderColor: 'divider',
           }}
         >
-          <EventIntervalSelector
-            disabled={viewMode !== 'list'}
-            setValue={setEventInterval}
-          />
-          <Divider />
           <QuerySelection
             queries={queries}
             selectedQueryIds={selectedQueryIds}
@@ -562,26 +506,21 @@ const Watch = () => {
             >
               <ToggleButton value="list">List</ToggleButton>
               <ToggleButton value="stats">Stats</ToggleButton>
+              <ToggleButton value="charts">Charts</ToggleButton>
             </ToggleButtonGroup>
           </Box>
           <Divider />
-          <Box sx={{ flex: 1 }}>
+          <Box sx={{ flex: 1, overflow: 'scroll' }}>
             {viewMode === 'list' ? (
-              <Virtuoso
-                overscan={50}
-                ref={virtuoso}
-                alignToBottom
-                atBottomStateChange={(isAtBottom) => setAtBottom(isAtBottom)}
-                followOutput="auto" // Auto-scroll if the window is at the bottom
-                atBottomThreshold={300}
+              <HitList
                 data={data}
-                itemContent={renderItem}
+                eventInterval={eventInterval}
+                setEventInterval={setEventInterval}
               />
             ) : viewMode === 'stats' ? (
-              <Stats
-                qid2StatsPerSecond={qid2StatsPerSecond}
-                queries={queries}
-              />
+              <Stats qid2Stats={qid2Stats} queries={queries} />
+            ) : viewMode === 'charts' ? (
+              <Charts qid2Stats={qid2Stats} queries={queries} />
             ) : null}
           </Box>
         </Box>

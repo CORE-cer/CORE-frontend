@@ -1,42 +1,8 @@
 import { Box, Divider, Grid2 as Grid, Paper, Typography } from '@mui/material';
 import { MAX_COLORS } from '../colors';
 
-function computeStats(statsPerSecond) {
-  if (statsPerSecond.length === 0) return null;
-
-  let maxHitsPerSecond = 0;
-  let maxComplexEventsPerSecond = 0;
-  let totalHits = 0;
-  let totalComplexEvents = 0;
-
-  for (let i = 0; i < statsPerSecond.length; ++i) {
-    const { numHits, numComplexEvents } = statsPerSecond[i];
-
-    maxHitsPerSecond = Math.max(maxHitsPerSecond, numHits);
-    maxComplexEventsPerSecond = Math.max(
-      maxComplexEventsPerSecond,
-      numComplexEvents
-    );
-    totalHits += numHits;
-    totalComplexEvents += totalComplexEvents;
-  }
-
-  const lastHitsPerSecond = statsPerSecond[statsPerSecond.length - 1].numHits;
-  const lastComplexEventsPerSecond =
-    statsPerSecond[statsPerSecond.length - 1].numComplexEvents;
-
-  return {
-    maxHitsPerSecond,
-    maxComplexEventsPerSecond,
-    totalHits,
-    totalComplexEvents,
-    lastHitsPerSecond,
-    lastComplexEventsPerSecond,
-  };
-}
-
-function QueryStat({ query, qid, statsPerSecond }) {
-  const computed = computeStats(statsPerSecond);
+function QueryStat({ query, qid, stats }) {
+  const { perSec, hitStats, complexEventStats } = stats;
 
   return (
     <Paper sx={{ py: 2, px: 1, textAlign: 'center' }} elevation={2}>
@@ -55,24 +21,23 @@ function QueryStat({ query, qid, statsPerSecond }) {
         {query?.query_name}
       </Typography>
       <Divider />
+      {/* HITS */}
       <Grid container spacing={2} sx={{ pt: 2 }}>
         <Grid size={{ xs: 12 }}>
           <Typography variant="subtitle1">{'Hits'}</Typography>
         </Grid>
         <Grid size={{ xs: 4 }}>
-          <Typography variant="body1">{computed?.totalHits || 0}</Typography>
+          <Typography variant="body1">{hitStats.total || 0}</Typography>
           <Typography variant="body2">{'total'}</Typography>
         </Grid>
         <Grid size={{ xs: 4 }}>
           <Typography variant="body1">
-            {computed?.lastHitsPerSecond || 0}
+            {perSec[perSec.length - 1]?.numHits || 0}
           </Typography>
           <Typography variant="body2">{'per sec'}</Typography>
         </Grid>
         <Grid size={{ xs: 4 }}>
-          <Typography variant="body1">
-            {computed?.maxHitsPerSecond || 0}
-          </Typography>
+          <Typography variant="body1">{hitStats.max || 0}</Typography>
           <Typography variant="body2">{'max/sec'}</Typography>
         </Grid>
 
@@ -80,25 +45,24 @@ function QueryStat({ query, qid, statsPerSecond }) {
           <Divider />
         </Grid>
 
+        {/* COMPLEX EVENTS */}
         <Grid size={{ xs: 12 }}>
           <Typography variant="subtitle1">{'Complex Events'}</Typography>
         </Grid>
         <Grid size={{ xs: 4 }}>
           <Typography variant="body1">
-            {computed?.totalComplexEvents || 0}
+            {complexEventStats.total || 0}
           </Typography>
           <Typography variant="body2">{'total'}</Typography>
         </Grid>
         <Grid size={{ xs: 4 }}>
           <Typography variant="body1">
-            {computed?.lastComplexEventsPerSecond || 0}
+            {perSec[perSec.length - 1]?.numComplexEvents || 0}
           </Typography>
           <Typography variant="body2">{'per sec'}</Typography>
         </Grid>
         <Grid size={{ xs: 4 }}>
-          <Typography variant="body1">
-            {computed?.maxComplexEventsPerSecond || 0}
-          </Typography>
+          <Typography variant="body1">{complexEventStats.max || 0}</Typography>
           <Typography variant="body2">{'max/sec'}</Typography>
         </Grid>
       </Grid>
@@ -106,16 +70,12 @@ function QueryStat({ query, qid, statsPerSecond }) {
   );
 }
 
-export default function Stats({ qid2StatsPerSecond, queries }) {
+export default function Stats({ qid2Stats, queries }) {
   return (
     <Grid container sx={{ flexGrow: 1, p: 1 }} spacing={2}>
-      {Object.entries(qid2StatsPerSecond).map(([qid, statsPerSecond], idx) => (
+      {Object.entries(qid2Stats).map(([qid, stats], idx) => (
         <Grid key={idx} size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}>
-          <QueryStat
-            query={queries[qid]}
-            qid={qid}
-            statsPerSecond={statsPerSecond}
-          />
+          <QueryStat query={queries[qid]} qid={qid} stats={stats} />
         </Grid>
       ))}
     </Grid>
