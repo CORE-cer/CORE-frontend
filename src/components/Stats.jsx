@@ -72,7 +72,7 @@ function QueryStat({ query, qid, stats }) {
 
 export default function Stats({ qid2Stats, queries }) {
   return (
-    <Grid container sx={{ flexGrow: 1, p: 1 }} spacing={2}>
+    <Grid container sx={{ p: 1 }} spacing={2}>
       {Object.entries(qid2Stats).map(([qid, stats], idx) => (
         <Grid key={idx} size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}>
           <QueryStat query={queries[qid]} qid={qid} stats={stats} />

@@ -16,13 +16,26 @@ const LineChart = ({ series, colors }) => {
         zoom: {
           enabled: false,
         },
+        animations: {
+          enabled: true,
+          easing: 'linear',
+          dynamicAnimation: {
+            speed: 300,
+          },
+        },
       },
       theme: {
         mode: theme.palette.mode,
       },
       xaxis: {
         type: 'datetime',
-        range: 10 * 1000,
+        range: 10 * 1000, // 10 seconds,
+        labels: {
+          datetimeUTC: false,
+        },
+      },
+      tooltip: {
+        enabled: false,
       },
     },
   });

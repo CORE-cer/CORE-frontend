@@ -17,7 +17,7 @@ const renderItem = (index, data) => {
   return (
     <Box sx={{ px: 1, py: 0.5 }}>
       <Paper
-        className={`color-${data.qid % MAX_COLORS}`}
+        className={`color-${Number(data.qid) % MAX_COLORS}`}
         sx={{
           p: 0.5,
           fontFamily: 'Consolas, "Courier New", monospace',
@@ -25,7 +25,7 @@ const renderItem = (index, data) => {
           wordBreak: 'break-all',
         }}
       >
-        {data.data}
+        {JSON.stringify(data.data)}
       </Paper>
     </Box>
   );
@@ -111,7 +111,7 @@ const HitList = ({ data, eventInterval, setEventInterval }) => {
   };
 
   return (
-    <>
+    <Box sx={{ overflow: 'hidden', flex: 1, display: 'flex', flexDirection:'column' }}>
       <ScrollToLatest
         trigger={!atBottom}
         scrollToBottom={handleScrollToBottom}
@@ -131,7 +131,7 @@ const HitList = ({ data, eventInterval, setEventInterval }) => {
         data={data}
         itemContent={renderItem}
       />
-    </>
+    </Box>
   );
 };
 

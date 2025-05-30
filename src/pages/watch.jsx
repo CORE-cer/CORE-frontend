@@ -29,7 +29,13 @@ const getQueries = async () => {
     method: 'GET',
   });
   const queries = await fetchRes.json();
-  return queries.filter((query) => query.active);
+
+  const activeQueries = queries.filter((query) => query.active);
+  const res = {};
+  for (const query of activeQueries) {
+    res[query.result_handler_identifier] = query;
+  }
+  return res;
 };
 
 const getStreamsInfo = async () => {
@@ -49,7 +55,7 @@ const inactivateQuery = async (qid) => {
   if (!fetchRes.ok) {
     throw new Error('Failed to inactivate query');
   }
-  console.log('Successfully inactivated query', qid);
+  console.info('Successfully inactivated query', qid);
 };
 
 const QuerySelectionItem = ({
@@ -109,9 +115,7 @@ const QuerySelection = ({ queries, selectedQueryIds, setSelectedQueryIds }) => {
 
   const handleSelectAll = () => {
     if (selectedQueryIds.size === 0) {
-      setSelectedQueryIds(
-        new Set(queries.map((q) => q.result_handler_identifier))
-      );
+      setSelectedQueryIds(new Set(Object.keys(queries)));
     } else {
       setSelectedQueryIds(new Set());
     }
@@ -157,7 +161,7 @@ const QuerySelection = ({ queries, selectedQueryIds, setSelectedQueryIds }) => {
           </ListItemButton>
         </ListItem>
         <Divider />
-        {queries.map((query, idx) => (
+        {Object.values(queries).map((query, idx) => (
           <QuerySelectionItem
             key={idx}
             query={query}
@@ -202,12 +206,13 @@ const Watch = () => {
           }
         }
       }
-      let outputComplexEvents = [];
+
+      let outputHits = [];
       for (const complexEvent of complexEventsJson) {
-        let outputComplexEvent = {};
+        const outputComplexEvent = {};
         outputComplexEvent['start'] = complexEvent['start'];
         outputComplexEvent['end'] = complexEvent['end'];
-        let events = [];
+        const events = [];
         for (let event of complexEvent['eventss']) {
           let eventOutput = {};
           event = event['event'];
@@ -222,13 +227,13 @@ const Watch = () => {
         }
         outputComplexEvent['events'] = events;
 
-        const triggerDate = new Date(outputComplexEvent['end'] / 1000000);
-
-        const outputString = `Event Triggered at time ${triggerDate.toISOString()} - ${JSON.stringify(outputComplexEvent)}`;
-
-        outputComplexEvents.push(outputString);
+        const time = new Date(outputComplexEvent['end'] / 1000000);
+        outputHits.push({
+          time,
+          data: outputComplexEvent,
+        });
       }
-      return outputComplexEvents.join('\n');
+      return outputHits;
     },
     [streamsInfo]
   );
@@ -271,7 +276,7 @@ const Watch = () => {
     setSelectedQueryIds((prev) => {
       const next = new Set(prev);
       for (const qid of prev) {
-        if (!queries.find((q) => q.result_handler_identifier === qid)) {
+        if (!Object.keys(queries).find((qid_) => qid_ === qid)) {
           next.delete(qid);
         }
       }
@@ -304,7 +309,7 @@ const Watch = () => {
         const ws = new WebSocket(baseUrl + '/' + qid);
         next[qid] = ws;
         ws.onopen = () => {
-          console.log('Connected to qid', qid);
+          console.info('Connected to qid', qid);
           currentQid2HitRef.current[qid] = {
             numHits: 0,
             numComplexEvents: 0,
@@ -326,7 +331,7 @@ const Watch = () => {
           });
         };
         ws.onclose = () => {
-          console.log('Disconnected from qid', qid);
+          console.info('Disconnected from qid', qid);
           delete currentQid2HitRef.current[qid];
           setQid2Stats((prev) => {
             const next = { ...prev };
@@ -340,7 +345,7 @@ const Watch = () => {
           });
         };
         ws.onerror = () => {
-          console.log('Error on qid', qid);
+          console.error('Error on qid', qid);
         };
       }
       return next;
@@ -354,12 +359,18 @@ const Watch = () => {
       for (const [qid, ws] of Object.entries(qid2Websockets)) {
         ws.onmessage = (event) => {
           const eventJson = JSON.parse(event.data);
-          const transformedEvent = formatComplexEvents(eventJson);
+          const transformedHits = formatComplexEvents(eventJson);
 
-          currentQid2HitRef.current[qid].numHits += 1;
-          currentQid2HitRef.current[qid].numComplexEvents += 99; // TODO: calcualte
+          let currentComplexEvents = 0;
+          for (const elem of transformedHits) {
+            currentComplexEvents += elem.data.events.length;
+          }
 
-          dataBuffer.current.push({ qid, data: transformedEvent });
+          currentQid2HitRef.current[qid].numHits += transformedHits.length;
+          currentQid2HitRef.current[qid].numComplexEvents +=
+            currentComplexEvents;
+
+          dataBuffer.current.push({ qid, data: transformedHits });
         };
       }
     } else {
@@ -374,12 +385,18 @@ const Watch = () => {
         ws.onmessage = (event) => {
           setData((prevData) => {
             const eventJson = JSON.parse(event.data);
-            const transformedEvent = formatComplexEvents(eventJson);
+            const transformedHits = formatComplexEvents(eventJson);
 
-            currentQid2HitRef.current[qid].numHits += 1;
-            currentQid2HitRef.current[qid].numComplexEvents += 99; // TODO: calcualte
+            let currentComplexEvents = 0;
+            for (const elem of transformedHits) {
+              currentComplexEvents += elem.data.events.length;
+            }
 
-            return [...prevData, { qid, data: transformedEvent }];
+            currentQid2HitRef.current[qid].numHits += transformedHits.length;
+            currentQid2HitRef.current[qid].numComplexEvents +=
+              currentComplexEvents;
+
+            return [...prevData, { qid, data: transformedHits }];
           });
         };
       }
@@ -390,7 +407,7 @@ const Watch = () => {
   useEffect(() => {
     if (eventInterval === 0) return;
 
-    console.log('Setting up buffered interval with', eventInterval, 'ms');
+    console.info('Setting up buffered interval with', eventInterval, 'ms');
     const bufferedInterval = setInterval(() => {
       while (dataBuffer.current.length > 0) {
         const first = dataBuffer.current.shift();
@@ -403,14 +420,14 @@ const Watch = () => {
       }
     }, eventInterval);
     return () => {
-      console.log('Clearing buffered interval');
+      console.info('Clearing buffered interval');
       clearInterval(bufferedInterval);
     };
   }, [eventInterval, selectedQueryIds]);
 
   useEffect(() => {
     return () => {
-      console.log('Disconnecting from all websockets...');
+      console.info('Disconnecting from all websockets...');
       for (const ws of Object.values(qid2Websockets)) {
         ws.close();
       }
@@ -425,11 +442,12 @@ const Watch = () => {
 
       setQid2Stats((prev) => {
         const next = { ...prev };
+        const time = new Date();
         for (const qid in next) {
           const curr = next[qid];
           curr.perSec.push({
             ...currentQid2HitRef.current[qid],
-            time: Date.now(),
+            time,
           });
 
           // increase total
@@ -510,7 +528,7 @@ const Watch = () => {
             </ToggleButtonGroup>
           </Box>
           <Divider />
-          <Box sx={{ flex: 1, overflow: 'scroll' }}>
+          <Box sx={{ flex: 1, overflow: 'scroll', display: 'flex' }}>
             {viewMode === 'list' ? (
               <HitList
                 data={data}

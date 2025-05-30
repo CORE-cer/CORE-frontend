@@ -49,7 +49,13 @@ const Charts = ({ qid2Stats, queries }) => {
   }, [qid2Stats, queries]);
 
   return (
-    <Grid container spacing={2} sx={{ p: 2 }}>
+    <Grid
+      container
+      spacing={2}
+      sx={{
+        p: 1,
+      }}
+    >
       <Grid size={{ xs: 12 }}>
         <Paper sx={{ p: 1 }}>
           <Typography variant="h6" textAlign="center">
@@ -63,7 +69,7 @@ const Charts = ({ qid2Stats, queries }) => {
         </Paper>
       </Grid>
 
-       <Grid size={{ xs: 12 }}>
+      <Grid size={{ xs: 12 }}>
         <Paper sx={{ p: 1 }}>
           <Typography variant="h6" textAlign="center">
             {'Complex events per sec'}
@@ -76,7 +82,7 @@ const Charts = ({ qid2Stats, queries }) => {
         </Paper>
       </Grid>
 
-      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+      <Grid size={{ xs: 12, sm: 6 }}>
         <Paper sx={{ p: 1 }}>
           <Typography variant="h6" textAlign="center">
             {'Total hits'}
@@ -89,7 +95,7 @@ const Charts = ({ qid2Stats, queries }) => {
         </Paper>
       </Grid>
 
-      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+      <Grid size={{ xs: 12, sm: 6 }}>
         <Paper sx={{ p: 1 }}>
           <Typography variant="h6" textAlign="center">
             {'Total Complex Events'}

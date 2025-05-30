@@ -8,13 +8,44 @@ const DonutChart = ({ series, labels, colors }) => {
   const [config, setConfig] = useState({
     series,
     options: {
+      chart: {
+        animations: {
+          enabled: true,
+          easing: 'linear',
+          dynamicAnimation: {
+            speed: 300,
+          },
+        },
+      },
       theme: {
         mode: theme.palette.mode,
       },
       labels,
       colors,
+      tooltip: {
+        enabled: false,
+      },
       legend: {
-        show: false,
+        enabled: true,
+        position: 'bottom',
+      },
+      dataLabels: {
+        formatter(val, opts) {
+          const str = `${series[opts.seriesIndex]} (${val.toFixed(1)}%)`;
+          return str;
+        },
+        style: {
+          fontSize: '12px',
+          fontFamily: 'Roboto',
+        },
+        dropShadow: {
+          enabled: true,
+          top: 0,
+          left: 0,
+          blur: 2,
+          color: '#000',
+          opacity: 1,
+        },
       },
       plotOptions: {
         pie: {
@@ -44,6 +75,13 @@ const DonutChart = ({ series, labels, colors }) => {
         theme: {
           ...prev.options.theme,
           mode: theme.palette.mode,
+        },
+        dataLabels: {
+          ...prev.options.dataLabels,
+          formatter(val, opts) {
+            const str = `${series[opts.seriesIndex]} (${val.toFixed(1)}%)`;
+            return str;
+          },
         },
       },
     }));
