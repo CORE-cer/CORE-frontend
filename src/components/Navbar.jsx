@@ -2,6 +2,7 @@ import { useTheme } from '@emotion/react';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import MenuIcon from '@mui/icons-material/Menu';
+import DataObjectIcon from '@mui/icons-material/DataObject';
 import {
   AppBar,
   Box,
@@ -12,6 +13,7 @@ import {
   List,
   ListItem,
   ListItemButton,
+  ListItemIcon,
   ListItemText,
   Toolbar,
   Tooltip,
@@ -23,6 +25,8 @@ import { matchPath, useLocation } from 'react-router';
 import { useDarkModeContext } from '../context/DarkModeContext';
 import { DRAWER_WIDTH } from '../MUIThemes';
 import Main from './Main';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 
 const Logo = () => {
   return (
@@ -43,7 +47,7 @@ const Logo = () => {
   );
 };
 
-const DrawerListItem = ({ text, href }) => {
+const DrawerListItem = ({ text, href, icon }) => {
   const { pathname } = useLocation();
 
   const isActive = useMemo(() => {
@@ -54,6 +58,7 @@ const DrawerListItem = ({ text, href }) => {
     <>
       <ListItem disablePadding>
         <ListItemButton component={Link} href={href} disabled={isActive}>
+          <ListItemIcon>{icon}</ListItemIcon>
           <ListItemText primary={text} />
         </ListItemButton>
       </ListItem>
@@ -133,8 +138,17 @@ export default function Navbar({ children }) {
         </Toolbar>
         <Divider />
         <List dense>
-          <DrawerListItem text="Query" href="/" />
-          <DrawerListItem text="Watch" href="/watch" />
+          <DrawerListItem text="Query" href="/" icon={<DataObjectIcon />} />
+          <DrawerListItem
+            text="Watch"
+            href="/watch"
+            icon={<VisibilityIcon />}
+          />
+          <DrawerListItem
+            text="About us"
+            href="/about-us"
+            icon={<PeopleAltIcon />}
+          />
         </List>
       </Drawer>
       <Main permanentDrawer={!isBelowMd}>{children}</Main>

@@ -46,8 +46,8 @@ export const Main = () => {
           element: <Watch />,
         },
         {
-          path: '/about',
-          element: <div>TODO: About</div>,
+          path: '/about-us',
+          element: <div>TODO: About us</div>,
         },
       ],
     },
